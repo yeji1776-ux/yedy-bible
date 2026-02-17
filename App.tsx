@@ -31,7 +31,7 @@ import {
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan } from './types';
 import { fetchDailyReflection, getDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
 
-const APP_PASSWORD = 'yedy0516';
+const APP_PASSWORD = '0516';
 
 const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
   const [password, setPassword] = useState('');
