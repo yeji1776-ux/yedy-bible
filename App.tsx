@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
-import { loadPlan, savePlan, updatePlanPause, loadHistory, markDateComplete, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
+import { loadPlan, savePlan, updatePlanPause, loadHistory, markDatesStatus, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
 
 const APP_PASSWORD = '0516';
 
@@ -227,8 +227,14 @@ const Header: React.FC<{
   );
 };
 
-const Calendar: React.FC<{ history: ReadingHistory; selectedDate: Date; onDateSelect: (d: Date) => void }> = ({ history, selectedDate, onDateSelect }) => {
-  const [viewDate, setViewDate] = useState(new Date(selectedDate));
+const Calendar: React.FC<{
+  history: ReadingHistory;
+  selectedDates: Set<string>;
+  onToggleDate: (dateStr: string) => void;
+  onMarkStatus: (status: 'success' | 'fail') => void;
+  onClearSelection: () => void;
+}> = ({ history, selectedDates, onToggleDate, onMarkStatus, onClearSelection }) => {
+  const [viewDate, setViewDate] = useState(new Date());
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
@@ -239,9 +245,6 @@ const Calendar: React.FC<{ history: ReadingHistory; selectedDate: Date; onDateSe
   const isToday = (d: number) => {
     const today = new Date();
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
-  };
-  const isSelected = (d: number) => {
-    return selectedDate.getFullYear() === year && selectedDate.getMonth() === month && selectedDate.getDate() === d;
   };
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 mt-8 shadow-sm">
@@ -255,6 +258,11 @@ const Calendar: React.FC<{ history: ReadingHistory; selectedDate: Date; onDateSe
           <button onClick={() => setViewDate(new Date(year, month + 1))} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronRight className="w-4 h-4 text-gray-500" /></button>
         </div>
       </div>
+      <div className="flex items-center gap-3 mb-4 text-[10px] font-bold text-gray-400">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-600 rounded" /> 성공</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-400 rounded" /> 실패</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-gray-100 rounded border border-gray-200" /> 미기록</span>
+      </div>
       <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-gray-400 mb-3 uppercase tracking-tighter">
         {['일', '월', '화', '수', '목', '금', '토'].map(d => <div key={d}>{d}</div>)}
       </div>
@@ -262,22 +270,47 @@ const Calendar: React.FC<{ history: ReadingHistory; selectedDate: Date; onDateSe
         {days.map((day, idx) => {
           if (day === null) return <div key={idx} />;
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isDone = history[dateStr];
+          const status = history[dateStr]; // 'success' | 'fail' | undefined
+          const isSelectedDate = selectedDates.has(dateStr);
           return (
             <button
               key={idx}
-              onClick={() => onDateSelect(new Date(year, month, day))}
+              onClick={() => onToggleDate(dateStr)}
               className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs transition-all relative
-                ${isSelected(day) ? 'ring-2 ring-blue-500 ring-offset-2 z-10 scale-110 shadow-lg' : ''}
-                ${isDone ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-100' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}
+                ${isSelectedDate ? 'ring-2 ring-purple-500 ring-offset-1 z-10 scale-105' : ''}
+                ${status === 'success' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-100' :
+                  status === 'fail' ? 'bg-red-400 text-white font-bold shadow-md shadow-red-100' :
+                  'bg-gray-50 text-gray-600 hover:bg-gray-100'}
               `}
             >
               {day}
-              {isToday(day) && !isDone && <div className="absolute bottom-1 w-1 h-1 bg-blue-400 rounded-full" />}
+              {isToday(day) && !status && <div className="absolute bottom-1 w-1 h-1 bg-blue-400 rounded-full" />}
             </button>
           );
         })}
       </div>
+      {selectedDates.size > 0 && (
+        <div className="mt-5 bg-gray-50 rounded-2xl p-4 border border-gray-200 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-black text-gray-600">{selectedDates.size}일 선택됨</span>
+            <button onClick={onClearSelection} className="text-[10px] font-bold text-gray-400 hover:text-gray-600 transition-colors">선택 초기화</button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onMarkStatus('success')}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] shadow-md shadow-blue-100"
+            >
+              <CheckCircle2 className="w-4 h-4" /> 읽기 성공
+            </button>
+            <button
+              onClick={() => onMarkStatus('fail')}
+              className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-600 transition-all active:scale-[0.98] shadow-md shadow-red-100"
+            >
+              <X className="w-4 h-4" /> 읽기 실패
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -471,6 +504,7 @@ const App: React.FC = () => {
   const [aiState, setAiState] = useState<AIState>({ loading: false, error: null, detailedExegesis: null, reflectionResponse: null });
   const [fontSize, setFontSize] = useState<number>(16);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [askContext, setAskContext] = useState<{ text: string; source: string } | null>(null);
@@ -591,12 +625,23 @@ const App: React.FC = () => {
     window.location.reload();
   };
 
-  const handleComplete = async () => {
-    const dateStr = selectedDate.toISOString().split('T')[0];
-    const newHistory = { ...history, [dateStr]: true };
+  const handleToggleDate = (dateStr: string) => {
+    setSelectedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr);
+      else next.add(dateStr);
+      return next;
+    });
+  };
+
+  const handleMarkStatus = async (status: 'success' | 'fail') => {
+    const dates: string[] = Array.from(selectedDates);
+    if (dates.length === 0) return;
+    const newHistory: ReadingHistory = { ...history };
+    dates.forEach((d: string) => { newHistory[d] = status; });
     setHistory(newHistory);
-    await markDateComplete(dateStr);
-    alert("오늘의 여정을 완료했습니다!");
+    setSelectedDates(new Set<string>());
+    await markDatesStatus(dates, status);
   };
 
   const handleExegesis = async (type: 'old' | 'new') => {
@@ -759,12 +804,15 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-            <button onClick={handleComplete} className="w-full bg-gray-100 text-gray-900 py-5 rounded-3xl font-black text-lg flex items-center justify-center gap-3 hover:bg-blue-600 hover:text-white transition-all shadow-sm group">
-              <CheckCircle2 className="w-7 h-7 text-blue-500 group-hover:text-white" /> 이 날의 여정 완료
-            </button>
           </div>
         ) : null}
-        <Calendar history={history} selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+        <Calendar
+          history={history}
+          selectedDates={selectedDates}
+          onToggleDate={handleToggleDate}
+          onMarkStatus={handleMarkStatus}
+          onClearSelection={() => setSelectedDates(new Set())}
+        />
       </main>
 
       {streamingExegesis && (

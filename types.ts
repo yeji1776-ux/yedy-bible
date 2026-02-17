@@ -64,5 +64,5 @@ export interface AIState {
 }
 
 export interface ReadingHistory {
-  [date: string]: boolean;
+  [date: string]: 'success' | 'fail';
 }

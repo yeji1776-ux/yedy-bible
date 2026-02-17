@@ -67,12 +67,17 @@ export async function loadHistory(): Promise<ReadingHistory> {
   const { data } = await supabase.from('reading_history').select('date, completed');
   if (!data) return {};
   const history: ReadingHistory = {};
-  data.forEach((row) => { history[row.date] = row.completed; });
+  data.forEach((row) => { history[row.date] = row.completed ? 'success' : 'fail'; });
   return history;
 }
 
-export async function markDateComplete(date: string): Promise<void> {
-  await supabase.from('reading_history').upsert({ date, completed: true }, { onConflict: 'date' });
+export async function markDateStatus(date: string, status: 'success' | 'fail'): Promise<void> {
+  await supabase.from('reading_history').upsert({ date, completed: status === 'success' }, { onConflict: 'date' });
+}
+
+export async function markDatesStatus(dates: string[], status: 'success' | 'fail'): Promise<void> {
+  const rows = dates.map(date => ({ date, completed: status === 'success' }));
+  await supabase.from('reading_history').upsert(rows, { onConflict: 'date' });
 }
 
 // ─── Reflection Cache (최근 30일만) ───
