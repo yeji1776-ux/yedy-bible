@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { ReadingPlan, ReadingHistory, DailyReflection } from '../types';
+import { ReadingPlan, ReadingHistory, DailyReflection, Bookmark } from '../types';
 
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
@@ -22,11 +22,15 @@ export async function loadPlan(): Promise<ReadingPlan | null> {
     ntBook: data.nt_book,
     ntStartChapter: data.nt_start_chapter,
     startDate: data.start_date,
+    otChaptersPerDay: data.ot_chapters_per_day ?? 2,
+    ntChaptersPerDay: data.nt_chapters_per_day ?? 1,
+    isPaused: data.is_paused ?? false,
+    pausedAt: data.paused_at ?? null,
+    totalPausedDays: data.total_paused_days ?? 0,
   };
 }
 
 export async function savePlan(plan: ReadingPlan): Promise<void> {
-  // 기존 계획 삭제 후 새로 저장
   await supabase.from('reading_plan').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   await supabase.from('reading_plan').insert({
     ot_book: plan.otBook,
@@ -34,7 +38,27 @@ export async function savePlan(plan: ReadingPlan): Promise<void> {
     nt_book: plan.ntBook,
     nt_start_chapter: plan.ntStartChapter,
     start_date: plan.startDate,
+    ot_chapters_per_day: plan.otChaptersPerDay,
+    nt_chapters_per_day: plan.ntChaptersPerDay,
+    is_paused: plan.isPaused,
+    paused_at: plan.pausedAt,
+    total_paused_days: plan.totalPausedDays,
   });
+}
+
+export async function updatePlanPause(isPaused: boolean, pausedAt: string | null, totalPausedDays: number): Promise<void> {
+  const { data } = await supabase
+    .from('reading_plan')
+    .select('id')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  if (!data) return;
+  await supabase.from('reading_plan').update({
+    is_paused: isPaused,
+    paused_at: pausedAt,
+    total_paused_days: totalPausedDays,
+  }).eq('id', data.id);
 }
 
 // ─── Reading History ───
@@ -69,10 +93,28 @@ export async function clearReflectionCache(): Promise<void> {
   await supabase.from('reflection_cache').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 }
 
+// ─── Bookmarks ───
+
+export async function loadBookmarks(): Promise<Bookmark[]> {
+  const { data } = await supabase.from('bookmarks').select('*').order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function addBookmark(bookmark: Bookmark): Promise<void> {
+  await supabase.from('bookmarks').insert({ text: bookmark.text, source: bookmark.source, note: bookmark.note });
+}
+
+export async function deleteBookmark(id: string): Promise<void> {
+  await supabase.from('bookmarks').delete().eq('id', id);
+}
+
+// ─── Clear All ───
+
 export async function clearAllData(): Promise<void> {
   await Promise.all([
     supabase.from('reading_plan').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
     supabase.from('reading_history').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
     supabase.from('reflection_cache').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+    supabase.from('bookmarks').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
   ]);
 }

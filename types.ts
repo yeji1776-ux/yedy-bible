@@ -29,6 +29,19 @@ export interface ReadingPlan {
   ntBook: string;
   ntStartChapter: number;
   startDate: string; // ISO format
+  otChaptersPerDay: number;
+  ntChaptersPerDay: number;
+  isPaused: boolean;
+  pausedAt: string | null;
+  totalPausedDays: number;
+}
+
+export interface Bookmark {
+  id?: string;
+  text: string;
+  source: string;
+  note?: string;
+  created_at?: string;
 }
 
 export interface ExegesisItem {
