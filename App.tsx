@@ -916,6 +916,13 @@ const App: React.FC = () => {
     setHistory(newHistory);
     setSelectedDates(new Set<string>());
     await markDatesStatus(dates, status);
+
+    // 실패/성공 표시 변경 시, 해당 날짜 이후의 리플렉션 캐시 무효화
+    // (effectiveDayDiff가 바뀌므로 이후 날짜의 읽기 분량이 달라짐)
+    const earliestDate = dates.sort()[0];
+    Object.keys(reflectionCacheRef.current).forEach(key => {
+      if (key >= earliestDate) delete reflectionCacheRef.current[key];
+    });
   };
 
   const handleExegesis = async (type: 'old' | 'new') => {
