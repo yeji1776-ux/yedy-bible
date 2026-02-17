@@ -1,0 +1,7 @@
+{
+  "name": "Bible Insight Pro",
+  "description": "An interactive Bible reflection and study application that uses Gemini AI to visualize scriptures, provide deep theological insights, and narrate daily readings.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
