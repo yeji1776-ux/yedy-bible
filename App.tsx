@@ -28,8 +28,6 @@ import {
   Users,
   Languages,
   Lock,
-  Pause,
-  Play,
   Bookmark,
   BookmarkCheck,
   MessageSquare,
@@ -38,7 +36,7 @@ import {
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
-import { loadPlan, savePlan, updatePlanPause, loadHistory, markDatesStatus, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
+import { loadPlan, savePlan, loadHistory, markDatesStatus, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
 
 const APP_PASSWORD = '0516';
 
@@ -330,7 +328,7 @@ const Calendar: React.FC<{
             <div
               key={idx}
               data-date={dateStr}
-              onClick={() => onToggleDate(dateStr)}
+              onPointerUp={(e) => { if (e.pointerType === 'mouse') onToggleDate(dateStr); }}
               className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs transition-all relative cursor-pointer select-none
                 ${isSelectedDate ? 'ring-2 ring-purple-500 ring-offset-1 z-10 scale-105' : ''}
                 ${status === 'success' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-100' :
@@ -815,22 +813,33 @@ const App: React.FC = () => {
     localStorage.setItem('bible_reading_font_size', fontSize.toString());
   }, [fontSize]);
 
+  const countFailDays = useCallback((startDate: string, endDate: Date) => {
+    const start = new Date(startDate);
+    start.setHours(0,0,0,0);
+    const end = new Date(endDate);
+    end.setHours(0,0,0,0);
+    let count = 0;
+    const d = new Date(start);
+    while (d < end) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (history[key] === 'fail') count++;
+      d.setDate(d.getDate() + 1);
+    }
+    return count;
+  }, [history]);
+
   const getEffectiveDayDiff = useCallback((plan: ReadingPlan) => {
     const start = new Date(plan.startDate);
     start.setHours(0,0,0,0);
     const target = new Date(selectedDate);
     target.setHours(0,0,0,0);
     const calendarDays = Math.round((target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return calendarDays - (plan.totalPausedDays || 0);
-  }, [selectedDate]);
+    const failDays = countFailDays(plan.startDate, selectedDate);
+    return calendarDays - (plan.totalPausedDays || 0) - failDays;
+  }, [selectedDate, countFailDays]);
 
   const fetchContent = useCallback(async () => {
     if (!plan || isEditingPlan) return;
-    if (plan.isPaused) {
-      setReflection(null);
-      setAiState(prev => ({ ...prev, loading: false, error: "일시정지 중입니다. 재개하면 이어서 볼 수 있습니다." }));
-      return;
-    }
     const dateStr = selectedDate.toISOString().split('T')[0];
     if (reflectionCacheRef.current[dateStr]) {
       setReflection(reflectionCacheRef.current[dateStr]);
@@ -874,28 +883,6 @@ const App: React.FC = () => {
     reflectionCacheRef.current = {};
     await clearReflectionCache();
     setIsEditingPlan(false);
-  };
-
-  const handleTogglePause = async () => {
-    if (!plan) return;
-    const now = new Date().toISOString().split('T')[0];
-    if (plan.isPaused) {
-      // Resume: calculate paused days and add to total
-      const pausedAt = new Date(plan.pausedAt!);
-      pausedAt.setHours(0,0,0,0);
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const pausedDays = Math.round((today.getTime() - pausedAt.getTime()) / (1000 * 60 * 60 * 24));
-      const newTotal = (plan.totalPausedDays || 0) + pausedDays;
-      const updated = { ...plan, isPaused: false, pausedAt: null, totalPausedDays: newTotal };
-      setPlan(updated);
-      await updatePlanPause(false, null, newTotal);
-    } else {
-      // Pause
-      const updated = { ...plan, isPaused: true, pausedAt: now };
-      setPlan(updated);
-      await updatePlanPause(true, now, plan.totalPausedDays || 0);
-    }
   };
 
   const handleReset = async () => {
@@ -1008,7 +995,9 @@ const App: React.FC = () => {
     start.setHours(0,0,0,0);
     const today = new Date();
     today.setHours(0,0,0,0);
-    return Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) - (plan.totalPausedDays || 0);
+    const calendarDays = Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const failDays = countFailDays(plan.startDate, today);
+    return calendarDays - (plan.totalPausedDays || 0) - failDays;
   })();
   const todayOtRange = getReadingPortion(BIBLE_METADATA.OT, plan.otBook, plan.otStartChapter, todayDayDiff, plan.otChaptersPerDay);
   const todayNtRange = getReadingPortion(BIBLE_METADATA.NT, plan.ntBook, plan.ntStartChapter, todayDayDiff, plan.ntChaptersPerDay);
@@ -1034,13 +1023,9 @@ const App: React.FC = () => {
               >
                 {dateLabel}
               </span>
-              {plan.isPaused && <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">일시정지</span>}
             </div>
             <div className="flex items-center gap-3 mt-1">
               <button onClick={goToToday} className="text-[10px] text-blue-600 font-bold hover:underline uppercase tracking-wider">Today</button>
-              <button onClick={handleTogglePause} className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${plan.isPaused ? 'text-green-600' : 'text-amber-600'}`}>
-                {plan.isPaused ? <><Play className="w-3 h-3" /> 재개</> : <><Pause className="w-3 h-3" /> 일시정지</>}
-              </button>
             </div>
           </div>
           <button onClick={() => changeDay(1)} className="p-2.5 hover:bg-white hover:shadow-sm rounded-xl transition-all"><ArrowRight className="w-5 h-5 text-gray-500" /></button>
@@ -1066,9 +1051,7 @@ const App: React.FC = () => {
             <div className="py-20 flex flex-col items-center justify-center text-center">
               <AlertCircle className="w-10 h-10 text-red-500 mb-4" />
               <h3 className="text-lg font-bold text-gray-900 mb-2">{aiState.error}</h3>
-              {!plan.isPaused && (
-                <button onClick={fetchContent} className="flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-black shadow-lg"><RefreshCcw className="w-4 h-4" /> 다시 시도</button>
-              )}
+              <button onClick={fetchContent} className="flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-black shadow-lg"><RefreshCcw className="w-4 h-4" /> 다시 시도</button>
             </div>
           ) : reflection ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
