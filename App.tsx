@@ -33,7 +33,8 @@ import {
   Bookmark,
   BookmarkCheck,
   MessageSquare,
-  Trash2
+  Trash2,
+  Home
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
@@ -463,7 +464,21 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
   );
 };
 
-const BookmarkPanel: React.FC<{ bookmarks: BookmarkType[], onDelete: (id: string) => void, onClose: () => void }> = ({ bookmarks, onDelete, onClose }) => {
+const BookmarkPanel: React.FC<{ bookmarks: BookmarkType[], onDelete: (id: string) => void, onClose: () => void, fontSize: number }> = ({ bookmarks, onDelete, onClose, fontSize }) => {
+  const groupedBookmarks = bookmarks.reduce((acc: Record<string, BookmarkType[]>, bm) => {
+    const dateKey = bm.created_at ? new Date(bm.created_at).toISOString().split('T')[0] : 'unknown';
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(bm);
+    return acc;
+  }, {});
+  const sortedDates = Object.keys(groupedBookmarks).sort((a, b) => b.localeCompare(a));
+
+  const formatDateHeader = (dateStr: string) => {
+    if (dateStr === 'unknown') return '날짜 미상';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
       <header className="bg-white border-b border-gray-100 p-5 sticky top-0 z-10 flex items-center justify-between">
@@ -482,24 +497,232 @@ const BookmarkPanel: React.FC<{ bookmarks: BookmarkType[], onDelete: (id: string
             <p className="text-xs mt-1">구절별 보기에서 문장을 북마크해보세요</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {bookmarks.map((bm) => (
-              <div key={bm.id} className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{bm.source}</span>
-                    <p className="text-sm font-bold text-gray-900 mt-1 leading-relaxed">{bm.text}</p>
-                    {bm.note && <p className="text-xs text-gray-500 mt-2 italic">{bm.note}</p>}
-                  </div>
-                  <button onClick={() => bm.id && onDelete(bm.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          <div className="space-y-6">
+            {sortedDates.map(dateStr => (
+              <div key={dateStr}>
+                <div className="flex items-center gap-2 mb-3">
+                  <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">{formatDateHeader(dateStr)}</h4>
+                </div>
+                <div className="space-y-3">
+                  {groupedBookmarks[dateStr].map((bm) => (
+                    <div key={bm.id} className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{bm.source}</span>
+                          <p className="font-bold text-gray-900 mt-1 leading-relaxed" style={{ fontSize: `${fontSize}px` }}>{bm.text}</p>
+                          {bm.note && <p className="text-gray-500 mt-2 italic" style={{ fontSize: `${fontSize - 2}px` }}>{bm.note}</p>}
+                        </div>
+                        <button onClick={() => bm.id && onDelete(bm.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const MiniCalendar: React.FC<{
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+  onClose: () => void;
+}> = ({ selectedDate, onSelectDate, onClose }) => {
+  const [viewDate, setViewDate] = useState(new Date(selectedDate));
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  const isSelected = (d: number) => {
+    return selectedDate.getFullYear() === year && selectedDate.getMonth() === month && selectedDate.getDate() === d;
+  };
+  const isToday = (d: number) => {
+    const today = new Date();
+    return today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/20" />
+      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => setViewDate(new Date(year, month - 1))} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronLeft className="w-4 h-4 text-gray-500" /></button>
+          <span className="text-sm font-bold text-gray-900">{year}년 {month + 1}월</span>
+          <button onClick={() => setViewDate(new Date(year, month + 1))} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronRight className="w-4 h-4 text-gray-500" /></button>
+        </div>
+        <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-gray-400 mb-1">
+          {['일','월','화','수','목','금','토'].map(d => <div key={d}>{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
+          {days.map((day, idx) => {
+            if (day === null) return <div key={idx} />;
+            return (
+              <button
+                key={idx}
+                onClick={() => {
+                  onSelectDate(new Date(year, month, day));
+                  onClose();
+                }}
+                className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold transition-all
+                  ${isSelected(day) ? 'bg-blue-600 text-white font-bold' : isToday(day) ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-700 hover:bg-gray-100'}
+                `}
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProgressRing: React.FC<{
+  progress: number;
+  color: string;
+  label: string;
+  size?: number;
+}> = ({ progress, color, label, size = 130 }) => {
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(progress, 1) * circumference);
+  const pct = Math.round(Math.min(progress, 1) * 100);
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={radius} stroke="#f0f0f0" strokeWidth={strokeWidth} fill="none" />
+        <circle
+          cx={size/2} cy={size/2} r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center" style={{ width: size, height: size }}>
+        <span className="text-2xl font-black text-gray-900">{pct}%</span>
+      </div>
+      <span className="text-xs font-bold text-gray-500 mt-1">{label}</span>
+    </div>
+  );
+};
+
+const Dashboard: React.FC<{
+  plan: ReadingPlan;
+  onStartReading: () => void;
+  todayOtRange: string;
+  todayNtRange: string;
+  effectiveDayDiff: number;
+}> = ({ plan, onStartReading, todayOtRange, todayNtRange, effectiveDayDiff }) => {
+  const getProgress = (testament: 'OT' | 'NT') => {
+    const books = BIBLE_METADATA[testament];
+    const startBookName = testament === 'OT' ? plan.otBook : plan.ntBook;
+    const startChapter = testament === 'OT' ? plan.otStartChapter : plan.ntStartChapter;
+    const chaptersPerDay = testament === 'OT' ? plan.otChaptersPerDay : plan.ntChaptersPerDay;
+    const totalTestament = books.reduce((s, b) => s + b.chapters, 0);
+
+    let startBookIdx = books.findIndex(b => b.name === startBookName);
+    if (startBookIdx === -1) startBookIdx = 0;
+
+    // Chapters before start book are already done
+    let chaptersBeforeStart = 0;
+    for (let i = 0; i < startBookIdx; i++) chaptersBeforeStart += books[i].chapters;
+    const chaptersBeforeStartChapter = chaptersBeforeStart + (startChapter - 1);
+
+    const chaptersReadSinceStart = Math.max(0, effectiveDayDiff) * chaptersPerDay;
+    const totalRead = chaptersBeforeStartChapter + chaptersReadSinceStart;
+    return Math.min(totalRead / totalTestament, 1);
+  };
+
+  const getCurrentPosition = (testament: 'OT' | 'NT') => {
+    const books = BIBLE_METADATA[testament];
+    const startBookName = testament === 'OT' ? plan.otBook : plan.ntBook;
+    const startChapter = testament === 'OT' ? plan.otStartChapter : plan.ntStartChapter;
+    const chaptersPerDay = testament === 'OT' ? plan.otChaptersPerDay : plan.ntChaptersPerDay;
+
+    let startIndex = books.findIndex(b => b.name === startBookName);
+    if (startIndex === -1) startIndex = 0;
+    let currentChapter = startChapter + Math.max(0, effectiveDayDiff) * chaptersPerDay;
+    let currentBookIndex = startIndex;
+    while (currentBookIndex < books.length && currentChapter > books[currentBookIndex].chapters) {
+      currentChapter -= books[currentBookIndex].chapters;
+      currentBookIndex++;
+    }
+    if (currentBookIndex >= books.length) return "통독 완료";
+    return `${books[currentBookIndex].name} ${currentChapter}장`;
+  };
+
+  const otProgress = getProgress('OT');
+  const ntProgress = getProgress('NT');
+
+  return (
+    <div className="p-5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="text-center pt-4 pb-2">
+        <h2 className="text-2xl font-black text-gray-900 tracking-tight">읽기 현황</h2>
+        <p className="text-sm text-gray-400 font-semibold mt-1">
+          {effectiveDayDiff >= 0 ? `${effectiveDayDiff + 1}일차 진행 중` : '시작 전'}
+        </p>
+      </div>
+
+      <div className="flex justify-center gap-8">
+        <div className="relative">
+          <ProgressRing progress={otProgress} color="#3b82f6" label="구약" />
+        </div>
+        <div className="relative">
+          <ProgressRing progress={ntProgress} color="#22c55e" label="신약" />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">구약 현재 위치</span>
+          </div>
+          <p className="text-sm font-bold text-gray-900">{plan.otBook} {plan.otStartChapter}장 → 현재: {getCurrentPosition('OT')}</p>
+        </div>
+        <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">신약 현재 위치</span>
+          </div>
+          <p className="text-sm font-bold text-gray-900">{plan.ntBook} {plan.ntStartChapter}장 → 현재: {getCurrentPosition('NT')}</p>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">오늘의 읽기 분량</h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded">구약</span>
+            <span className="text-sm font-bold text-gray-900">{todayOtRange}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-0.5 rounded">신약</span>
+            <span className="text-sm font-bold text-gray-900">{todayNtRange}</span>
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={onStartReading}
+        className="w-full bg-blue-600 text-white py-4.5 rounded-2xl font-bold text-base hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+      >
+        <BookOpen className="w-5 h-5" /> 오늘의 말씀 읽기
+      </button>
     </div>
   );
 };
@@ -563,6 +786,8 @@ const App: React.FC = () => {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [askContext, setAskContext] = useState<{ text: string; source: string } | null>(null);
   const [streamingExegesis, setStreamingExegesis] = useState<{ range: string; version: string; items: ExegesisItem[]; done: boolean } | null>(null);
+  const [currentView, setCurrentView] = useState<'home' | 'reading'>('home');
+  const [showMiniCalendar, setShowMiniCalendar] = useState(false);
 
   const reflectionCacheRef = useRef<Record<string, DailyReflection>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -778,6 +1003,15 @@ const App: React.FC = () => {
   const effectiveDayDiff = getEffectiveDayDiff(plan);
   const dayNum = effectiveDayDiff + 1;
   const dateLabel = selectedDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+  const todayDayDiff = (() => {
+    const start = new Date(plan.startDate);
+    start.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return Math.round((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) - (plan.totalPausedDays || 0);
+  })();
+  const todayOtRange = getReadingPortion(BIBLE_METADATA.OT, plan.otBook, plan.otStartChapter, todayDayDiff, plan.otChaptersPerDay);
+  const todayNtRange = getReadingPortion(BIBLE_METADATA.NT, plan.ntBook, plan.ntStartChapter, todayDayDiff, plan.ntChaptersPerDay);
 
   return (
     <div className="max-w-2xl mx-auto min-h-screen bg-white shadow-xl border-x border-gray-100 pb-24 font-pretendard">
@@ -794,7 +1028,12 @@ const App: React.FC = () => {
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{dayNum > 0 ? `${dayNum}일차` : '-'}</span>
-              <span className="text-sm font-bold text-gray-900">{dateLabel}</span>
+              <span
+                className="text-sm font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                onClick={() => setShowMiniCalendar(true)}
+              >
+                {dateLabel}
+              </span>
               {plan.isPaused && <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">일시정지</span>}
             </div>
             <div className="flex items-center gap-3 mt-1">
@@ -807,76 +1046,118 @@ const App: React.FC = () => {
           <button onClick={() => changeDay(1)} className="p-2.5 hover:bg-white hover:shadow-sm rounded-xl transition-all"><ArrowRight className="w-5 h-5 text-gray-500" /></button>
         </div>
       </div>
-      <main className="p-5 space-y-12">
-        {aiState.loading && !reflection ? (
-          <div className="py-32 flex flex-col items-center justify-center space-y-5">
-            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-            <p className="text-gray-400 font-bold text-sm">말씀을 준비하고 있습니다...</p>
-          </div>
-        ) : aiState.error ? (
-          <div className="py-20 flex flex-col items-center justify-center text-center">
-            <AlertCircle className="w-10 h-10 text-red-500 mb-4" />
-            <h3 className="text-lg font-bold text-gray-900 mb-2">{aiState.error}</h3>
-            {!plan.isPaused && (
-              <button onClick={fetchContent} className="flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-black shadow-lg"><RefreshCcw className="w-4 h-4" /> 다시 시도</button>
-            )}
-          </div>
-        ) : reflection ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {reflection.old_testament && (
-              <StudySection
-                type="old"
-                section={reflection.old_testament}
-                fontSize={fontSize}
-                onExegesis={() => handleExegesis('old')}
-                onCopy={handleCopyText}
-                copiedId={copiedId}
-              />
-            )}
-            {reflection.new_testament && (
-              <StudySection
-                type="new"
-                section={reflection.new_testament}
-                fontSize={fontSize}
-                onExegesis={() => handleExegesis('new')}
-                onCopy={handleCopyText}
-                copiedId={copiedId}
-              />
-            )}
-            <div className="bg-blue-600 rounded-3xl p-8 shadow-2xl shadow-blue-200 mb-12">
-              <div className="flex items-center gap-2 mb-4 text-white/80">
-                <MessageCircle className="w-5 h-5" />
-                <h3 className="font-bold text-xs uppercase tracking-widest">Today's Reflection</h3>
-              </div>
-              <p className="text-white font-bold text-lg mb-8 leading-relaxed" style={{ fontSize: `${fontSize}px` }}>{reflection.meditation_question}</p>
-              <button
-                onClick={async () => {
-                  setAiState(prev => ({ ...prev, loading: true }));
-                  const context = `구약: ${reflection.old_testament?.summary}, 신약: ${reflection.new_testament?.summary}`;
-                  const result = await getDeepReflection(reflection.meditation_question, context);
-                  setAiState(prev => ({ ...prev, loading: false, reflectionResponse: result }));
-                }}
-                className="w-full bg-white text-blue-600 py-4.5 rounded-2xl font-bold text-sm hover:bg-blue-50 transition-all shadow-xl"
-              >
-                깊은 묵상 열어보기
-              </button>
-              {aiState.reflectionResponse && (
-                <div className="mt-6 bg-blue-700/30 backdrop-blur-sm p-6 rounded-2xl text-sm text-white/90 leading-relaxed whitespace-pre-wrap font-medium border border-white/10">
-                  {aiState.reflectionResponse}
-                </div>
+
+      {currentView === 'home' ? (
+        <Dashboard
+          plan={plan}
+          onStartReading={() => setCurrentView('reading')}
+          todayOtRange={todayOtRange}
+          todayNtRange={todayNtRange}
+          effectiveDayDiff={todayDayDiff}
+        />
+      ) : (
+        <main className="p-5 space-y-12">
+          {aiState.loading && !reflection ? (
+            <div className="py-32 flex flex-col items-center justify-center space-y-5">
+              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              <p className="text-gray-400 font-bold text-sm">말씀을 준비하고 있습니다...</p>
+            </div>
+          ) : aiState.error ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center">
+              <AlertCircle className="w-10 h-10 text-red-500 mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{aiState.error}</h3>
+              {!plan.isPaused && (
+                <button onClick={fetchContent} className="flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-black shadow-lg"><RefreshCcw className="w-4 h-4" /> 다시 시도</button>
               )}
             </div>
-          </div>
-        ) : null}
-        <Calendar
-          history={history}
-          selectedDates={selectedDates}
-          onToggleDate={handleToggleDate}
-          onAddDates={handleAddDates}
-          onMarkStatus={handleMarkStatus}
-          onClearSelection={() => setSelectedDates(new Set())}
+          ) : reflection ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {reflection.old_testament && (
+                <StudySection
+                  type="old"
+                  section={reflection.old_testament}
+                  fontSize={fontSize}
+                  onExegesis={() => handleExegesis('old')}
+                  onCopy={handleCopyText}
+                  copiedId={copiedId}
+                />
+              )}
+              {reflection.new_testament && (
+                <StudySection
+                  type="new"
+                  section={reflection.new_testament}
+                  fontSize={fontSize}
+                  onExegesis={() => handleExegesis('new')}
+                  onCopy={handleCopyText}
+                  copiedId={copiedId}
+                />
+              )}
+              <div className="bg-blue-600 rounded-3xl p-8 shadow-2xl shadow-blue-200 mb-12">
+                <div className="flex items-center gap-2 mb-4 text-white/80">
+                  <MessageCircle className="w-5 h-5" />
+                  <h3 className="font-bold text-xs uppercase tracking-widest">Today's Reflection</h3>
+                </div>
+                <p className="text-white font-bold text-lg mb-8 leading-relaxed" style={{ fontSize: `${fontSize}px` }}>{reflection.meditation_question}</p>
+                <button
+                  onClick={async () => {
+                    setAiState(prev => ({ ...prev, loading: true }));
+                    const context = `구약: ${reflection.old_testament?.summary}, 신약: ${reflection.new_testament?.summary}`;
+                    const result = await getDeepReflection(reflection.meditation_question, context);
+                    setAiState(prev => ({ ...prev, loading: false, reflectionResponse: result }));
+                  }}
+                  className="w-full bg-white text-blue-600 py-4.5 rounded-2xl font-bold text-sm hover:bg-blue-50 transition-all shadow-xl"
+                >
+                  깊은 묵상 열어보기
+                </button>
+                {aiState.reflectionResponse && (
+                  <div className="mt-6 bg-blue-700/30 backdrop-blur-sm p-6 rounded-2xl text-white/90 leading-relaxed whitespace-pre-wrap font-medium border border-white/10" style={{ fontSize: `${fontSize}px` }}>
+                    {aiState.reflectionResponse}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <Calendar
+            history={history}
+            selectedDates={selectedDates}
+            onToggleDate={handleToggleDate}
+            onAddDates={handleAddDates}
+            onMarkStatus={handleMarkStatus}
+            onClearSelection={() => setSelectedDates(new Set())}
+          />
+        </main>
+      )}
+
+      {/* Bottom navigation */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-white border-t border-gray-200 z-40">
+        <div className="flex">
+          <button
+            onClick={() => setCurrentView('home')}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'home' ? 'text-blue-600' : 'text-gray-400'}`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[10px] font-bold">홈</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('reading')}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'reading' ? 'text-blue-600' : 'text-gray-400'}`}
+          >
+            <BookOpen className="w-5 h-5" />
+            <span className="text-[10px] font-bold">읽기</span>
+          </button>
+        </div>
+      </div>
+
+      {showMiniCalendar && (
+        <MiniCalendar
+          selectedDate={selectedDate}
+          onSelectDate={(date) => {
+            setSelectedDate(date);
+            setCurrentView('reading');
+          }}
+          onClose={() => setShowMiniCalendar(false)}
         />
-      </main>
+      )}
 
       {streamingExegesis && (
         <ExegesisOverlay
@@ -887,12 +1168,12 @@ const App: React.FC = () => {
           onCopy={handleCopyText}
           copiedId={copiedId}
           onBookmark={handleAddBookmark}
-          onAsk={(text, source) => setAskContext({ text, source })}
+          onAsk={(text: string, source: string) => setAskContext({ text, source })}
         />
       )}
 
       {showBookmarks && (
-        <BookmarkPanel bookmarks={bookmarks} onDelete={handleDeleteBookmark} onClose={() => setShowBookmarks(false)} />
+        <BookmarkPanel bookmarks={bookmarks} onDelete={handleDeleteBookmark} onClose={() => setShowBookmarks(false)} fontSize={fontSize} />
       )}
 
       {askContext && (
@@ -967,7 +1248,7 @@ const StudySection: React.FC<{
             <Info className={`w-5 h-5 text-${accentColor}-500 mt-1 shrink-0`} />
             <div>
               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">성경적 배경</h4>
-              <p className="text-gray-700 leading-relaxed font-medium text-sm">{section.background}</p>
+              <p className="text-gray-700 leading-relaxed font-medium" style={{ fontSize: `${fontSize}px` }}>{section.background}</p>
             </div>
           </div>
         )}
@@ -988,7 +1269,7 @@ const StudySection: React.FC<{
                 {section.figures.map((f: any, i: number) => (
                   <div key={i}>
                     <span className="font-bold text-xs text-gray-900">{f.name}</span>
-                    <p className="text-[11px] text-gray-500 leading-normal">{f.description}</p>
+                    <p className="text-gray-500 leading-normal" style={{ fontSize: `${fontSize - 2}px` }}>{f.description}</p>
                   </div>
                 ))}
               </div>
@@ -1004,7 +1285,7 @@ const StudySection: React.FC<{
                 {section.vocabulary.map((v: any, i: number) => (
                   <div key={i}>
                     <span className="font-bold text-xs text-gray-900">{v.word}</span>
-                    <p className="text-[11px] text-gray-500 leading-normal">{v.meaning}</p>
+                    <p className="text-gray-500 leading-normal" style={{ fontSize: `${fontSize - 2}px` }}>{v.meaning}</p>
                   </div>
                 ))}
               </div>
