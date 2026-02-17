@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan } from './types';
 import { fetchDailyReflection, getDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
+import { loadPlan, savePlan, loadHistory, markDateComplete, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData } from './services/supabase';
 
 const APP_PASSWORD = '0516';
 
@@ -353,21 +354,27 @@ const App: React.FC = () => {
   const [selectedVersion, setSelectedVersion] = useState<string>("개역개정");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  const [reflectionCache, setReflectionCache] = useState<Record<string, DailyReflection>>(() => {
-    const saved = localStorage.getItem('bible_reflection_cache');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [reflectionCache, setReflectionCache] = useState<Record<string, DailyReflection>>({});
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    const savedPlan = localStorage.getItem('bible_reading_plan');
-    const savedHistory = localStorage.getItem('bible_reading_history');
-    const savedFontSize = localStorage.getItem('bible_reading_font_size');
-    const savedVersion = localStorage.getItem('bible_reading_version');
-    if (savedPlan) setPlan(JSON.parse(savedPlan));
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
-    if (savedFontSize) setFontSize(parseInt(savedFontSize));
-    if (savedVersion) setSelectedVersion(savedVersion);
-  }, []);
+    if (!isAuthed) return;
+    (async () => {
+      const [savedPlan, savedHistory, savedCache] = await Promise.all([
+        loadPlan(),
+        loadHistory(),
+        loadReflectionCache(),
+      ]);
+      if (savedPlan) setPlan(savedPlan);
+      setHistory(savedHistory);
+      setReflectionCache(savedCache);
+      const savedFontSize = localStorage.getItem('bible_reading_font_size');
+      const savedVersion = localStorage.getItem('bible_reading_version');
+      if (savedFontSize) setFontSize(parseInt(savedFontSize));
+      if (savedVersion) setSelectedVersion(savedVersion);
+      setDataLoaded(true);
+    })();
+  }, [isAuthed]);
 
   useEffect(() => {
     localStorage.setItem('bible_reading_font_size', fontSize.toString());
@@ -376,10 +383,6 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('bible_reading_version', selectedVersion);
   }, [selectedVersion]);
-
-  useEffect(() => {
-    localStorage.setItem('bible_reflection_cache', JSON.stringify(reflectionCache));
-  }, [reflectionCache]);
 
   const fetchContent = useCallback(async () => {
     if (!plan || isEditingPlan) return;
@@ -408,6 +411,7 @@ const App: React.FC = () => {
       if (result) {
         setReflection(result);
         setReflectionCache(prev => ({ ...prev, [dateStr]: result }));
+        saveReflection(dateStr, result);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (e: any) {
@@ -423,24 +427,25 @@ const App: React.FC = () => {
     fetchContent();
   }, [selectedDate, plan, isEditingPlan, fetchContent]);
 
-  const handleSavePlan = (p: ReadingPlan) => {
-    localStorage.setItem('bible_reading_plan', JSON.stringify(p));
+  const handleSavePlan = async (p: ReadingPlan) => {
+    await savePlan(p);
     setPlan(p);
     setReflectionCache({});
-    localStorage.removeItem('bible_reflection_cache');
+    await clearReflectionCache();
     setIsEditingPlan(false);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    await clearAllData();
     localStorage.clear();
     window.location.reload();
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const dateStr = selectedDate.toISOString().split('T')[0];
     const newHistory = { ...history, [dateStr]: true };
     setHistory(newHistory);
-    localStorage.setItem('bible_reading_history', JSON.stringify(newHistory));
+    await markDateComplete(dateStr);
     alert("오늘의 여정을 완료했습니다!");
   };
 
@@ -480,6 +485,12 @@ const App: React.FC = () => {
   };
 
   if (!isAuthed) return <PasswordGate onAuth={() => setIsAuthed(true)} />;
+
+  if (!dataLoaded) return (
+    <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+    </div>
+  );
 
   if (!plan || isEditingPlan) return (
     <div className="min-h-screen bg-[#FDFDFD]">
