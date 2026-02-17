@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BookOpen,
   Volume2,
@@ -39,7 +39,6 @@ import { fetchDailyReflection, getDetailedExegesis, getDeepReflection, playTTS }
 import { loadPlan, savePlan, updatePlanPause, loadHistory, markDateComplete, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
 
 const APP_PASSWORD = '0516';
-const BIBLE_VERSIONS = ["쉬운성경", "개역개정", "NIV"];
 
 const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
   const [password, setPassword] = useState('');
@@ -471,13 +470,12 @@ const App: React.FC = () => {
   const [reflection, setReflection] = useState<DailyReflection | null>(null);
   const [aiState, setAiState] = useState<AIState>({ loading: false, error: null, detailedExegesis: null, reflectionResponse: null });
   const [fontSize, setFontSize] = useState<number>(16);
-  const [selectedVersion, setSelectedVersion] = useState<string>("쉬운성경");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [askContext, setAskContext] = useState<{ text: string; source: string } | null>(null);
 
-  const [reflectionCache, setReflectionCache] = useState<Record<string, DailyReflection>>({});
+  const reflectionCacheRef = useRef<Record<string, DailyReflection>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
@@ -491,12 +489,10 @@ const App: React.FC = () => {
       ]);
       if (savedPlan) setPlan(savedPlan);
       setHistory(savedHistory);
-      setReflectionCache(savedCache);
+      reflectionCacheRef.current = savedCache;
       setBookmarks(savedBookmarks);
       const savedFontSize = localStorage.getItem('bible_reading_font_size');
-      const savedVersion = localStorage.getItem('bible_reading_version');
       if (savedFontSize) setFontSize(parseInt(savedFontSize));
-      if (savedVersion) setSelectedVersion(savedVersion);
       setDataLoaded(true);
     })();
   }, [isAuthed]);
@@ -504,10 +500,6 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('bible_reading_font_size', fontSize.toString());
   }, [fontSize]);
-
-  useEffect(() => {
-    localStorage.setItem('bible_reading_version', selectedVersion);
-  }, [selectedVersion]);
 
   const getEffectiveDayDiff = useCallback((plan: ReadingPlan) => {
     const start = new Date(plan.startDate);
@@ -526,8 +518,8 @@ const App: React.FC = () => {
       return;
     }
     const dateStr = selectedDate.toISOString().split('T')[0];
-    if (reflectionCache[dateStr]) {
-      setReflection(reflectionCache[dateStr]);
+    if (reflectionCacheRef.current[dateStr]) {
+      setReflection(reflectionCacheRef.current[dateStr]);
       setAiState(prev => ({ ...prev, loading: false, error: null }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -545,7 +537,7 @@ const App: React.FC = () => {
       const result = await fetchDailyReflection(otRange, ntRange);
       if (result) {
         setReflection(result);
-        setReflectionCache(prev => ({ ...prev, [dateStr]: result }));
+        reflectionCacheRef.current[dateStr] = result;
         saveReflection(dateStr, result);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -556,16 +548,16 @@ const App: React.FC = () => {
     } finally {
       setAiState(prev => ({ ...prev, loading: false }));
     }
-  }, [plan, selectedDate, isEditingPlan, reflectionCache, getEffectiveDayDiff]);
+  }, [plan, selectedDate, isEditingPlan, getEffectiveDayDiff]);
 
   useEffect(() => {
-    fetchContent();
-  }, [selectedDate, plan, isEditingPlan, fetchContent]);
+    if (dataLoaded) fetchContent();
+  }, [dataLoaded, fetchContent]);
 
   const handleSavePlan = async (p: ReadingPlan) => {
     await savePlan(p);
     setPlan(p);
-    setReflectionCache({});
+    reflectionCacheRef.current = {};
     await clearReflectionCache();
     setIsEditingPlan(false);
   };
@@ -606,14 +598,13 @@ const App: React.FC = () => {
     alert("오늘의 여정을 완료했습니다!");
   };
 
-  const handleExegesis = async (type: 'old' | 'new', version?: string) => {
+  const handleExegesis = async (type: 'old' | 'new') => {
     if (!reflection) return;
     const data = type === 'old' ? reflection.old_testament : reflection.new_testament;
     if (!data) return;
     setAiState(prev => ({ ...prev, loading: true, error: null }));
     try {
-      const targetVersion = version || selectedVersion;
-      const result = await getDetailedExegesis(data.range, targetVersion);
+      const result = await getDetailedExegesis(data.range);
       if (result) {
         setAiState(prev => ({ ...prev, detailedExegesis: result }));
       }
@@ -633,8 +624,8 @@ const App: React.FC = () => {
 
   const handleAddBookmark = async (text: string, source: string) => {
     const bm: BookmarkType = { text, source };
-    await addBookmark(bm);
-    setBookmarks(await loadBookmarks());
+    const saved = await addBookmark(bm);
+    setBookmarks(prev => [saved, ...prev]);
   };
 
   const handleDeleteBookmark = async (id: string) => {
@@ -774,15 +765,6 @@ const App: React.FC = () => {
         <ExegesisOverlay
           data={aiState.detailedExegesis}
           onClose={() => setAiState(prev => ({ ...prev, detailedExegesis: null }))}
-          onVersionChange={async (v) => {
-            setSelectedVersion(v);
-            if (aiState.detailedExegesis) {
-              setAiState(prev => ({ ...prev, loading: true }));
-              const res = await getDetailedExegesis(aiState.detailedExegesis!.range, v);
-              setAiState(prev => ({ ...prev, detailedExegesis: res, loading: false }));
-            }
-          }}
-          selectedVersion={selectedVersion}
           fontSize={fontSize}
           onCopy={handleCopyText}
           copiedId={copiedId}
@@ -896,14 +878,12 @@ const StudySection: React.FC<{
 const ExegesisOverlay: React.FC<{
   data: any,
   onClose: () => void,
-  onVersionChange: (v: string) => void,
-  selectedVersion: string,
   fontSize: number,
   onCopy: (t: string, id: string) => void,
   copiedId: string | null,
   onBookmark: (text: string, source: string) => void,
   onAsk: (text: string, source: string) => void
-}> = ({ data, onClose, onVersionChange, selectedVersion, fontSize, onCopy, copiedId, onBookmark, onAsk }) => {
+}> = ({ data, onClose, fontSize, onCopy, copiedId, onBookmark, onAsk }) => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
 
   const handleBookmark = (text: string, source: string, id: string) => {
@@ -913,27 +893,21 @@ const ExegesisOverlay: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
-      <header className="bg-white border-b border-gray-100 p-5 sticky top-0 z-10 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
+      <header className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between shrink-0">
         <div className="flex flex-col">
           <h3 className="text-2xl font-black text-gray-900 tracking-tight">{data.range}</h3>
-          <span className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded tracking-wider w-fit mt-1">{selectedVersion}</span>
+          <span className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded tracking-wider w-fit mt-1">쉬운성경</span>
         </div>
         <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-full transition-colors"><X className="w-6 h-6" /></button>
       </header>
 
-      <div className="flex-1 overflow-hidden h-full grid grid-cols-1 lg:grid-cols-2">
+      {/* Mobile: single scroll container / Desktop: side-by-side independent scroll */}
+      <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-2">
         {/* Scripture View */}
-        <div className="border-r border-gray-100 overflow-y-auto p-6 md:p-10 bg-[#FAFAFA]">
-          <div className="sticky top-0 bg-transparent pb-8 flex items-center justify-between z-10">
+        <div className="border-b lg:border-b-0 lg:border-r border-gray-100 lg:overflow-y-auto p-6 md:p-10 bg-[#FAFAFA]">
+          <div className="pb-4 flex items-center justify-between">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">말씀 본문</span>
-            <select
-              value={selectedVersion}
-              onChange={(e) => onVersionChange(e.target.value)}
-              className="bg-white border border-gray-200 rounded-xl text-xs font-bold px-3 py-2 outline-none"
-            >
-              {BIBLE_VERSIONS.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
           </div>
           <div className="space-y-12">
             {data.items.map((item: any, idx: number) => (
@@ -972,11 +946,11 @@ const ExegesisOverlay: React.FC<{
         </div>
 
         {/* Explanation View */}
-        <div className="overflow-y-auto p-6 md:p-10 bg-white">
-          <div className="sticky top-0 bg-white pb-8 z-10">
+        <div className="lg:overflow-y-auto p-6 md:p-10 bg-white">
+          <div className="pb-4">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">구절별 상세 해설</span>
           </div>
-          <div className="space-y-12">
+          <div className="space-y-12 pb-8">
             {data.items.map((item: any, idx: number) => (
               <div key={idx} className="group">
                 <div className="flex items-center justify-between mb-4">

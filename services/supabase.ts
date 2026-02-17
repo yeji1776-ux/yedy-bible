@@ -75,10 +75,13 @@ export async function markDateComplete(date: string): Promise<void> {
   await supabase.from('reading_history').upsert({ date, completed: true }, { onConflict: 'date' });
 }
 
-// ─── Reflection Cache ───
+// ─── Reflection Cache (최근 30일만) ───
 
 export async function loadReflectionCache(): Promise<Record<string, DailyReflection>> {
-  const { data } = await supabase.from('reflection_cache').select('date, data');
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const cutoff = thirtyDaysAgo.toISOString().split('T')[0];
+  const { data } = await supabase.from('reflection_cache').select('date, data').gte('date', cutoff);
   if (!data) return {};
   const cache: Record<string, DailyReflection> = {};
   data.forEach((row) => { cache[row.date] = row.data as DailyReflection; });
@@ -100,8 +103,9 @@ export async function loadBookmarks(): Promise<Bookmark[]> {
   return data || [];
 }
 
-export async function addBookmark(bookmark: Bookmark): Promise<void> {
-  await supabase.from('bookmarks').insert({ text: bookmark.text, source: bookmark.source, note: bookmark.note });
+export async function addBookmark(bookmark: Bookmark): Promise<Bookmark> {
+  const { data } = await supabase.from('bookmarks').insert({ text: bookmark.text, source: bookmark.source, note: bookmark.note }).select().single();
+  return data as Bookmark;
 }
 
 export async function deleteBookmark(id: string): Promise<void> {
