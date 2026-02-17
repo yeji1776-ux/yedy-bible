@@ -231,21 +231,68 @@ const Calendar: React.FC<{
   history: ReadingHistory;
   selectedDates: Set<string>;
   onToggleDate: (dateStr: string) => void;
+  onAddDates: (dates: string[]) => void;
   onMarkStatus: (status: 'success' | 'fail') => void;
   onClearSelection: () => void;
-}> = ({ history, selectedDates, onToggleDate, onMarkStatus, onClearSelection }) => {
+}> = ({ history, selectedDates, onToggleDate, onAddDates, onMarkStatus, onClearSelection }) => {
   const [viewDate, setViewDate] = useState(new Date());
+  const isDraggingRef = useRef(false);
+  const dragDatesRef = useRef<Set<string>>(new Set());
+  const lastDateRef = useRef<string | null>(null);
+
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days = [];
+  const days: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
   const isToday = (d: number) => {
     const today = new Date();
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
   };
+
+  const getDateFromPoint = (x: number, y: number): string | null => {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return null;
+    const btn = el.closest('[data-date]') as HTMLElement | null;
+    return btn?.dataset.date || null;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const dateStr = getDateFromPoint(touch.clientX, touch.clientY);
+    if (!dateStr) return;
+    isDraggingRef.current = true;
+    dragDatesRef.current = new Set([dateStr]);
+    lastDateRef.current = dateStr;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault(); // prevent scroll while dragging
+    const touch = e.touches[0];
+    const dateStr = getDateFromPoint(touch.clientX, touch.clientY);
+    if (!dateStr || dateStr === lastDateRef.current) return;
+    lastDateRef.current = dateStr;
+    dragDatesRef.current.add(dateStr);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    const dates = Array.from(dragDatesRef.current);
+    if (dates.length <= 1) {
+      // single tap — toggle
+      if (dates.length === 1) onToggleDate(dates[0]);
+    } else {
+      // drag — add all
+      onAddDates(dates);
+    }
+    dragDatesRef.current.clear();
+    lastDateRef.current = null;
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 mt-8 shadow-sm">
       <div className="flex items-center justify-between mb-5">
@@ -266,17 +313,23 @@ const Calendar: React.FC<{
       <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-gray-400 mb-3 uppercase tracking-tighter">
         {['일', '월', '화', '수', '목', '금', '토'].map(d => <div key={d}>{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
+      <div
+        className="grid grid-cols-7 gap-1.5 touch-none"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {days.map((day, idx) => {
           if (day === null) return <div key={idx} />;
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const status = history[dateStr]; // 'success' | 'fail' | undefined
           const isSelectedDate = selectedDates.has(dateStr);
           return (
-            <button
+            <div
               key={idx}
+              data-date={dateStr}
               onClick={() => onToggleDate(dateStr)}
-              className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs transition-all relative
+              className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs transition-all relative cursor-pointer select-none
                 ${isSelectedDate ? 'ring-2 ring-purple-500 ring-offset-1 z-10 scale-105' : ''}
                 ${status === 'success' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-100' :
                   status === 'fail' ? 'bg-red-400 text-white font-bold shadow-md shadow-red-100' :
@@ -285,7 +338,7 @@ const Calendar: React.FC<{
             >
               {day}
               {isToday(day) && !status && <div className="absolute bottom-1 w-1 h-1 bg-blue-400 rounded-full" />}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -634,6 +687,14 @@ const App: React.FC = () => {
     });
   };
 
+  const handleAddDates = (dates: string[]) => {
+    setSelectedDates(prev => {
+      const next = new Set(prev);
+      dates.forEach(d => next.add(d));
+      return next;
+    });
+  };
+
   const handleMarkStatus = async (status: 'success' | 'fail') => {
     const dates: string[] = Array.from(selectedDates);
     if (dates.length === 0) return;
@@ -810,6 +871,7 @@ const App: React.FC = () => {
           history={history}
           selectedDates={selectedDates}
           onToggleDate={handleToggleDate}
+          onAddDates={handleAddDates}
           onMarkStatus={handleMarkStatus}
           onClearSelection={() => setSelectedDates(new Set())}
         />
