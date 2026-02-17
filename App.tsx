@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BookOpen,
   Volume2,
+  VolumeX,
   MessageCircle,
   Loader2,
   BookText,
@@ -920,6 +921,31 @@ const StudySection: React.FC<{
 }> = ({ type, section, fontSize, onExegesis, onCopy, copiedId }) => {
   const accentColor = type === 'old' ? 'blue' : 'green';
   const label = type === 'old' ? 'Old Testament' : 'New Testament';
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleTTS = async () => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+      setIsPlaying(false);
+      return;
+    }
+    setTtsLoading(true);
+    const audio = await playTTS(`${section.range}. ${section.summary}`);
+    setTtsLoading(false);
+    if (audio) {
+      audioRef.current = audio;
+      setIsPlaying(true);
+      audio.onended = () => {
+        setIsPlaying(false);
+        audioRef.current = null;
+      };
+    }
+  };
+
   return (
     <section className="border-b border-gray-100 pb-12 mb-12">
       <div className="flex items-center justify-between mb-5">
@@ -928,7 +954,9 @@ const StudySection: React.FC<{
           <button onClick={() => onCopy(section.summary, `${type}-summary`)} className={`p-2 text-gray-300 hover:text-${accentColor}-500 transition-colors`}>
             {copiedId === `${type}-summary` ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
           </button>
-          <button onClick={() => playTTS(`${section.range}. ${section.summary}`)} className={`p-2 text-gray-300 hover:text-${accentColor}-500 transition-colors`}><Volume2 className="w-4 h-4" /></button>
+          <button onClick={handleTTS} disabled={ttsLoading} className={`p-2 transition-colors ${isPlaying ? `text-${accentColor}-500` : `text-gray-300 hover:text-${accentColor}-500`} ${ttsLoading ? 'opacity-50' : ''}`}>
+            {ttsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
         </div>
       </div>
       <h2 className="text-3xl font-black text-gray-900 mb-6 tracking-tight">{section.range}</h2>

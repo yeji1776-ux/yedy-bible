@@ -247,7 +247,7 @@ export async function getDeepReflection(
   });
 }
 
-export async function playTTS(text: string): Promise<void> {
+export async function playTTS(text: string): Promise<HTMLAudioElement | null> {
   try {
     const response = await client.audio.speech.create({
       model: "tts-1",
@@ -262,7 +262,9 @@ export async function playTTS(text: string): Promise<void> {
     const audio = new Audio(url);
     audio.onended = () => URL.revokeObjectURL(url);
     audio.play();
+    return audio;
   } catch (error) {
     console.error("TTS failed", error);
+    return null;
   }
 }
