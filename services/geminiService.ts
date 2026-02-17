@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { DailyReflection, DetailedExegesisResult } from "../types";
+import { DailyReflection, DetailedExegesisResult, ExegesisItem } from "../types";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
@@ -121,58 +121,106 @@ export async function fetchDailyReflection(
   });
 }
 
-export async function getDetailedExegesis(
-  range: string
-): Promise<DetailedExegesisResult | null> {
-  return withRetry(async () => {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 4000,
-      messages: [
-        {
-          role: "system",
-          content:
-            "당신은 성경 학자이자 목회자입니다. 요청된 성경 본문의 각 구절별 해설을 한국어로 작성하세요. 해설에는 반드시 다음을 포함하세요: 1) 하나님이나 예수님이 왜 그렇게 하셨는지/말씀하셨는지에 대한 자세한 이유, 2) 현대 사회에 비유한 쉬운 설명, 3) 삶의 교훈이나 반성적 내용. 따뜻하고 이해하기 쉬운 어조로 작성하세요.",
-        },
-        {
-          role: "user",
-          content: `성경 본문 범위: ${range}\n번역본: 쉬운성경\n\n위 본문 각 구절별로 본문 텍스트와 상세 해설을 JSON으로 제공하세요. 해설은 최소 3-4문장 이상으로 풍부하게 작성해주세요.`,
-        },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "detailed_exegesis",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              range: { type: "string" },
-              version: { type: "string" },
+export async function streamDetailedExegesis(
+  range: string,
+  onItem: (item: ExegesisItem) => void,
+  onMeta: (range: string, version: string) => void,
+): Promise<void> {
+  const stream = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_tokens: 3000,
+    stream: true,
+    messages: [
+      {
+        role: "system",
+        content:
+          "당신은 성경 학자이자 목회자입니다. 요청된 성경 본문에서 가장 중요하고 핵심적인 구절들만 선별(장당 4-6절)하여 해설하세요. 해설에는 반드시 다음을 포함하세요: 1) 하나님이나 예수님이 왜 그렇게 하셨는지/말씀하셨는지에 대한 자세한 이유, 2) 현대 사회에 비유한 쉬운 설명, 3) 삶의 교훈이나 반성적 내용. 따뜻하고 이해하기 쉬운 어조로 작성하세요.",
+      },
+      {
+        role: "user",
+        content: `성경 본문 범위: ${range}\n번역본: 쉬운성경\n\n위 본문에서 핵심 구절들만 선별하여 본문 텍스트와 상세 해설을 JSON으로 제공하세요.`,
+      },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "detailed_exegesis",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            range: { type: "string" },
+            version: { type: "string" },
+            items: {
+              type: "array",
               items: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    verseNum: { type: "string" },
-                    text: { type: "string" },
-                    explanation: { type: "string" },
-                  },
-                  required: ["verseNum", "text", "explanation"],
-                  additionalProperties: false,
+                type: "object",
+                properties: {
+                  verseNum: { type: "string" },
+                  text: { type: "string" },
+                  explanation: { type: "string" },
                 },
+                required: ["verseNum", "text", "explanation"],
+                additionalProperties: false,
               },
             },
-            required: ["range", "version", "items"],
-            additionalProperties: false,
           },
+          required: ["range", "version", "items"],
+          additionalProperties: false,
         },
       },
-    });
-    const content = response.choices[0]?.message?.content;
-    if (!content) return null;
-    return JSON.parse(content);
+    },
   });
+
+  let accumulated = "";
+  let emittedCount = 0;
+  let metaEmitted = false;
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content || "";
+    accumulated += delta;
+
+    // Extract range/version meta once available
+    if (!metaEmitted) {
+      const rangeMatch = accumulated.match(/"range"\s*:\s*"([^"]+)"/);
+      const versionMatch = accumulated.match(/"version"\s*:\s*"([^"]+)"/);
+      if (rangeMatch && versionMatch) {
+        onMeta(rangeMatch[1], versionMatch[1]);
+        metaEmitted = true;
+      }
+    }
+
+    // Extract completed item objects from the items array
+    const itemsStart = accumulated.indexOf('"items"');
+    if (itemsStart === -1) continue;
+    const arrayStart = accumulated.indexOf("[", itemsStart);
+    if (arrayStart === -1) continue;
+
+    let depth = 0;
+    let objStart = -1;
+    let found = 0;
+
+    for (let i = arrayStart + 1; i < accumulated.length; i++) {
+      const ch = accumulated[i];
+      if (ch === "{") {
+        if (depth === 0) objStart = i;
+        depth++;
+      } else if (ch === "}") {
+        depth--;
+        if (depth === 0 && objStart !== -1) {
+          found++;
+          if (found > emittedCount) {
+            try {
+              const item = JSON.parse(accumulated.slice(objStart, i + 1));
+              onItem(item);
+              emittedCount = found;
+            } catch { /* incomplete JSON, skip */ }
+          }
+          objStart = -1;
+        }
+      }
+    }
+  }
 }
 
 export async function getDeepReflection(

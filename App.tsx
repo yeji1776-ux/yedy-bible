@@ -34,8 +34,8 @@ import {
   MessageSquare,
   Trash2
 } from 'lucide-react';
-import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType } from './types';
-import { fetchDailyReflection, getDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
+import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem } from './types';
+import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS } from './services/geminiService';
 import { loadPlan, savePlan, updatePlanPause, loadHistory, markDateComplete, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
 
 const APP_PASSWORD = '0516';
@@ -474,6 +474,7 @@ const App: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [askContext, setAskContext] = useState<{ text: string; source: string } | null>(null);
+  const [streamingExegesis, setStreamingExegesis] = useState<{ range: string; version: string; items: ExegesisItem[]; done: boolean } | null>(null);
 
   const reflectionCacheRef = useRef<Record<string, DailyReflection>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -602,16 +603,21 @@ const App: React.FC = () => {
     if (!reflection) return;
     const data = type === 'old' ? reflection.old_testament : reflection.new_testament;
     if (!data) return;
-    setAiState(prev => ({ ...prev, loading: true, error: null }));
+    setStreamingExegesis({ range: data.range, version: '쉬운성경', items: [], done: false });
     try {
-      const result = await getDetailedExegesis(data.range);
-      if (result) {
-        setAiState(prev => ({ ...prev, detailedExegesis: result }));
-      }
+      await streamDetailedExegesis(
+        data.range,
+        (item) => {
+          setStreamingExegesis(prev => prev ? { ...prev, items: [...prev.items, item] } : prev);
+        },
+        (range, version) => {
+          setStreamingExegesis(prev => prev ? { ...prev, range, version } : prev);
+        },
+      );
+      setStreamingExegesis(prev => prev ? { ...prev, done: true } : prev);
     } catch (e: any) {
       setAiState(prev => ({ ...prev, error: "해설을 불러오지 못했습니다." }));
-    } finally {
-      setAiState(prev => ({ ...prev, loading: false }));
+      setStreamingExegesis(null);
     }
   };
 
@@ -761,10 +767,11 @@ const App: React.FC = () => {
         <Calendar history={history} selectedDate={selectedDate} onDateSelect={setSelectedDate} />
       </main>
 
-      {aiState.detailedExegesis && (
+      {streamingExegesis && (
         <ExegesisOverlay
-          data={aiState.detailedExegesis}
-          onClose={() => setAiState(prev => ({ ...prev, detailedExegesis: null }))}
+          data={streamingExegesis}
+          isStreaming={!streamingExegesis.done}
+          onClose={() => setStreamingExegesis(null)}
           fontSize={fontSize}
           onCopy={handleCopyText}
           copiedId={copiedId}
@@ -876,15 +883,17 @@ const StudySection: React.FC<{
 };
 
 const ExegesisOverlay: React.FC<{
-  data: any,
+  data: { range: string; version: string; items: ExegesisItem[]; done: boolean },
+  isStreaming: boolean,
   onClose: () => void,
   fontSize: number,
   onCopy: (t: string, id: string) => void,
   copiedId: string | null,
   onBookmark: (text: string, source: string) => void,
   onAsk: (text: string, source: string) => void
-}> = ({ data, onClose, fontSize, onCopy, copiedId, onBookmark, onAsk }) => {
+}> = ({ data, isStreaming, onClose, fontSize, onCopy, copiedId, onBookmark, onAsk }) => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleBookmark = (text: string, source: string, id: string) => {
     onBookmark(text, source);
@@ -892,103 +901,112 @@ const ExegesisOverlay: React.FC<{
     setTimeout(() => setBookmarkedIds(prev => { const n = new Set(prev); n.delete(id); return n; }), 2000);
   };
 
+  // Auto-scroll to bottom as new items stream in
+  useEffect(() => {
+    if (isStreaming && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [data.items.length, isStreaming]);
+
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
       <header className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between shrink-0">
         <div className="flex flex-col">
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">{data.range}</h3>
-          <span className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded tracking-wider w-fit mt-1">쉬운성경</span>
+          <div className="flex items-center gap-2">
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight">{data.range}</h3>
+            {isStreaming && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded tracking-wider">쉬운성경</span>
+            <span className="text-[10px] font-bold text-gray-400">핵심 {data.items.length}절{isStreaming ? '...' : ''}</span>
+          </div>
         </div>
         <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-full transition-colors"><X className="w-6 h-6" /></button>
       </header>
 
-      {/* Mobile: single scroll container / Desktop: side-by-side independent scroll */}
-      <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-2">
-        {/* Scripture View */}
-        <div className="border-b lg:border-b-0 lg:border-r border-gray-100 lg:overflow-y-auto p-6 md:p-10 bg-[#FAFAFA]">
-          <div className="pb-4 flex items-center justify-between">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">말씀 본문</span>
-          </div>
-          <div className="space-y-12">
-            {data.items.map((item: any, idx: number) => (
-              <div key={idx} className="group relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-blue-500 font-black text-[12px] tracking-widest uppercase">{item.verseNum}</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleBookmark(item.text, `${data.range} ${item.verseNum}`, `bm-v-${idx}`)}
-                      className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
-                        bookmarkedIds.has(`bm-v-${idx}`) ? 'bg-amber-500 text-white' : 'bg-white text-gray-400 border border-gray-100 hover:text-amber-500'
-                      }`}
-                    >
-                      {bookmarkedIds.has(`bm-v-${idx}`) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    </button>
-                    <button
-                      onClick={() => onAsk(item.text, `${data.range} ${item.verseNum}`)}
-                      className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black bg-white text-gray-400 border border-gray-100 hover:text-blue-500 transition-all shadow-sm"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onCopy(item.text, `ex-v-${idx}`)}
-                      className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
-                        copiedId === `ex-v-${idx}` ? 'bg-green-500 text-white' : 'bg-white text-gray-400 border border-gray-100 hover:text-gray-900'
-                      }`}
-                    >
-                      {copiedId === `ex-v-${idx}` ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-                <p className="text-gray-900 font-bold leading-[1.8]" style={{ fontSize: `${fontSize + 2}px` }}>{item.text}</p>
-              </div>
-            ))}
-          </div>
+      {data.items.length === 0 && isStreaming ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+          <p className="text-gray-400 font-bold text-sm">핵심 구절을 선별하고 있습니다...</p>
         </div>
-
-        {/* Explanation View */}
-        <div className="lg:overflow-y-auto p-6 md:p-10 bg-white">
-          <div className="pb-4">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">구절별 상세 해설</span>
-          </div>
-          <div className="space-y-12 pb-8">
-            {data.items.map((item: any, idx: number) => (
-              <div key={idx} className="group">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3 flex-1">
+      ) : (
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-6 md:p-10 space-y-10 pb-12">
+            {data.items.map((item, idx) => (
+              <div key={idx} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
+                {/* Verse */}
+                <div className="p-5 bg-[#FAFAFA]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-blue-500 font-black text-[12px] tracking-widest uppercase">{item.verseNum}</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleBookmark(item.text, `${data.range} ${item.verseNum}`, `bm-v-${idx}`)}
+                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
+                          bookmarkedIds.has(`bm-v-${idx}`) ? 'bg-amber-500 text-white' : 'bg-white text-gray-400 border border-gray-100 hover:text-amber-500'
+                        }`}
+                      >
+                        {bookmarkedIds.has(`bm-v-${idx}`) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => onAsk(item.text, `${data.range} ${item.verseNum}`)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black bg-white text-gray-400 border border-gray-100 hover:text-blue-500 transition-all shadow-sm"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onCopy(item.text, `ex-v-${idx}`)}
+                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
+                          copiedId === `ex-v-${idx}` ? 'bg-green-500 text-white' : 'bg-white text-gray-400 border border-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        {copiedId === `ex-v-${idx}` ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-gray-900 font-bold leading-[1.8]" style={{ fontSize: `${fontSize + 2}px` }}>{item.text}</p>
+                </div>
+                {/* Explanation */}
+                <div className="p-5 bg-white border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="bg-gray-900 text-white font-black text-[10px] px-2.5 py-1 rounded tracking-tighter uppercase">{item.verseNum} 해설</span>
-                    <div className="h-px bg-gray-100 flex-1" />
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleBookmark(item.explanation, `${data.range} ${item.verseNum} 해설`, `bm-e-${idx}`)}
+                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
+                          bookmarkedIds.has(`bm-e-${idx}`) ? 'bg-amber-500 text-white' : 'bg-gray-50 text-gray-400 border border-gray-100 hover:text-amber-500'
+                        }`}
+                      >
+                        {bookmarkedIds.has(`bm-e-${idx}`) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => onAsk(item.explanation, `${data.range} ${item.verseNum} 해설`)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black bg-gray-50 text-gray-400 border border-gray-100 hover:text-blue-500 transition-all shadow-sm"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onCopy(item.explanation, `ex-e-${idx}`)}
+                        className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
+                          copiedId === `ex-e-${idx}` ? 'bg-green-500 text-white' : 'bg-gray-50 text-gray-400 border border-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        {copiedId === `ex-e-${idx}` ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 ml-3 shrink-0">
-                    <button
-                      onClick={() => handleBookmark(item.explanation, `${data.range} ${item.verseNum} 해설`, `bm-e-${idx}`)}
-                      className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
-                        bookmarkedIds.has(`bm-e-${idx}`) ? 'bg-amber-500 text-white' : 'bg-gray-50 text-gray-400 border border-gray-100 hover:text-amber-500'
-                      }`}
-                    >
-                      {bookmarkedIds.has(`bm-e-${idx}`) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    </button>
-                    <button
-                      onClick={() => onAsk(item.explanation, `${data.range} ${item.verseNum} 해설`)}
-                      className="flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black bg-gray-50 text-gray-400 border border-gray-100 hover:text-blue-500 transition-all shadow-sm"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onCopy(item.explanation, `ex-e-${idx}`)}
-                      className={`flex items-center gap-1 px-2 py-1.5 rounded-full text-[10px] font-black transition-all shadow-sm ${
-                        copiedId === `ex-e-${idx}` ? 'bg-green-500 text-white' : 'bg-gray-50 text-gray-400 border border-gray-100 hover:text-gray-900'
-                      }`}
-                    >
-                      {copiedId === `ex-e-${idx}` ? <ClipboardCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap font-medium" style={{ fontSize: `${fontSize}px` }}>{item.explanation}</p>
                 </div>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap font-medium" style={{ fontSize: `${fontSize}px` }}>{item.explanation}</p>
               </div>
             ))}
+            {isStreaming && data.items.length > 0 && (
+              <div className="flex items-center justify-center gap-3 py-6">
+                <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                <span className="text-sm font-bold text-gray-400">다음 구절 해설 중...</span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
