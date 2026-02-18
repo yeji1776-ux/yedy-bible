@@ -44,6 +44,11 @@ export interface Bookmark {
   created_at?: string;
 }
 
+export interface BibleVerse {
+  verseNum: string;
+  text: string;
+}
+
 export interface ExegesisItem {
   verseNum: string;
   text: string;
