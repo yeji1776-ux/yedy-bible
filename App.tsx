@@ -38,7 +38,8 @@ import {
   ChevronDown,
   PenLine,
   BarChart3,
-  LogOut
+  LogOut,
+  Share2
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, streamFullBibleText, getDeepReflection, playTTS, fetchWordMeaning } from './services/geminiService';
@@ -203,6 +204,20 @@ const SettingsPanel: React.FC<{
       </div>
 
       <div className="space-y-3 pt-4 border-t border-border-light">
+        <button
+          onClick={() => {
+            const url = window.location.href;
+            if (navigator.share) {
+              navigator.share({ title: "Hare's Bible", url });
+            } else {
+              navigator.clipboard.writeText(url);
+              alert('링크가 복사되었습니다!');
+            }
+          }}
+          className="w-full bg-bg-primary text-text-primary py-3.5 rounded-full font-bold text-[10px] hover:bg-bg-secondary transition-all border border-border-light flex items-center justify-center gap-2 uppercase tracking-widest"
+        >
+          <Share2 className="w-3.5 h-3.5" /> 앱 주소 공유하기
+        </button>
         {onEditPlan && (
           <button onClick={() => { onEditPlan(); onClose(); }} className="btn-analogue w-full flex items-center justify-center gap-2 hover:bg-accent-black hover:text-white transition-all">
             <Edit2 className="w-4 h-4" /> 통독 계획 수정
@@ -1095,7 +1110,7 @@ const ChatPanel: React.FC<{
           <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-6" />
           <div className="flex items-center gap-3">
             <MessageSquare className="w-5 h-5 text-accent-blue" />
-            <h3 className="text-xl font-black text-text-primary serif-text tracking-tighter">궁그미 챗봇</h3>
+            <h3 className="text-xl font-black text-text-primary serif-text tracking-tighter">Hare 챗봇</h3>
           </div>
           <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-2">오늘 읽은 말씀에 대해 자유롭게 질문하세요</p>
         </div>

@@ -330,7 +330,7 @@ export async function fetchWordMeaning(
 ): Promise<{ word: string; meaning: string }> {
   return withRetry(async () => {
     const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1-nano",
       max_tokens: 200,
       messages: [
         {
@@ -355,7 +355,7 @@ export async function getDeepReflection(
 ): Promise<string | null> {
   return withRetry(async () => {
     const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1-nano",
       max_tokens: 1500,
       messages: [
         {
