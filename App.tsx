@@ -255,11 +255,12 @@ const Header: React.FC<{
   onSettings?: () => void,
   onShowBookmarks?: () => void,
   onShowChat?: () => void,
-}> = ({ onSettings, onShowBookmarks, onShowChat }) => {
+  onRefresh?: () => void,
+}> = ({ onSettings, onShowBookmarks, onShowChat, onRefresh }) => {
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2" onClick={() => window.location.reload()}>
+        <div className="flex items-center gap-2" onClick={() => onRefresh ? onRefresh() : window.location.reload()}>
           <Hexagon className="w-5 h-5 text-blue-600 cursor-pointer" />
           <h1 className="text-lg font-bold text-gray-900 tracking-tight cursor-pointer">Yedy's Bible</h1>
         </div>
@@ -1303,11 +1304,17 @@ const App: React.FC = () => {
     });
   };
 
-  const handleAddBookmark = async (text: string, source: string) => {
-    if (bookmarks.some(b => b.text === text && b.source === source)) return;
+  const handleToggleBookmark = async (text: string, source: string) => {
+    const existing = bookmarks.find(b => b.text === text && b.source === source);
+    if (existing && existing.id) {
+      await deleteBookmark(existing.id);
+      setBookmarks(prev => prev.filter(b => b.id !== existing.id));
+      return false;
+    }
     const bm: BookmarkType = { text, source };
     const saved = await addBookmark(bm);
     setBookmarks(prev => [saved, ...prev]);
+    return true;
   };
 
   const handleDeleteBookmark = async (id: string) => {
@@ -1365,6 +1372,12 @@ const App: React.FC = () => {
         onSettings={() => setShowSettings(true)}
         onShowBookmarks={() => setShowBookmarks(true)}
         onShowChat={() => setShowChat(true)}
+        onRefresh={() => {
+          const dateStr = selectedDate.toISOString().split('T')[0];
+          delete reflectionCacheRef.current[dateStr];
+          fetchContent();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
       <div className="bg-gray-50/80 backdrop-blur-md border-b border-gray-100 sticky top-14 z-30 px-4 py-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -1511,10 +1524,11 @@ const App: React.FC = () => {
           fontSize={fontSize}
           onCopy={handleCopyText}
           copiedId={copiedId}
-          onBookmark={handleAddBookmark}
+          onBookmark={handleToggleBookmark}
           onAsk={(text: string, source: string) => setAskContext({ text, source })}
           fullText={fullBibleText}
           onSaveWord={handleSaveWord}
+          onRemoveWord={(word) => handleDeleteWord(selectedDate.toISOString().split('T')[0], word)}
         />
       )}
 
@@ -1729,11 +1743,12 @@ const ExegesisOverlay: React.FC<{
   fontSize: number,
   onCopy: (t: string, id: string) => void,
   copiedId: string | null,
-  onBookmark: (text: string, source: string) => void,
+  onBookmark: (text: string, source: string) => Promise<boolean>,
   onAsk: (text: string, source: string) => void,
   fullText: { range: string; version: string; verses: BibleVerse[]; done: boolean } | null,
-  onSaveWord: (word: string, meaning: string) => void
-}> = ({ data, isStreaming, onClose, fontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord }) => {
+  onSaveWord: (word: string, meaning: string) => void,
+  onRemoveWord: (word: string) => void
+}> = ({ data, isStreaming, onClose, fontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord }) => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'fulltext' | 'exegesis'>('fulltext');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1786,10 +1801,18 @@ const ExegesisOverlay: React.FC<{
     }
   };
 
-  const handleBookmark = (text: string, source: string, id: string) => {
-    if (bookmarkedIds.has(id)) return;
-    onBookmark(text, source);
-    setBookmarkedIds(prev => new Set(prev).add(id));
+  const handleBookmark = async (text: string, source: string, id: string) => {
+    if (bookmarkedIds.has(id)) {
+      const added = await onBookmark(text, source);
+      if (!added) {
+        setBookmarkedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+      }
+      return;
+    }
+    const added = await onBookmark(text, source);
+    if (added) {
+      setBookmarkedIds(prev => new Set(prev).add(id));
+    }
   };
 
   // Auto-scroll to bottom as new items stream in (only on exegesis tab)
@@ -1857,7 +1880,11 @@ const ExegesisOverlay: React.FC<{
             <div className="flex-1 min-h-0 flex flex-col">
               <div className="flex-1 overflow-y-auto">
                 <div className="max-w-3xl mx-auto p-6 md:p-10 space-y-4 pb-12">
-                  {fullText?.verses.map((verse, idx) => (
+                  {fullText?.verses.slice().sort((a, b) => {
+                    const [ac, av] = a.verseNum.split(':').map(Number);
+                    const [bc, bv] = b.verseNum.split(':').map(Number);
+                    return (ac - bc) || (av - bv);
+                  }).map((verse, idx) => (
                     <div key={idx} className="flex gap-3 items-start animate-in fade-in duration-300 group">
                       <span className="text-blue-500 font-black text-xs mt-1 shrink-0 w-10 text-right tabular-nums">{verse.verseNum}</span>
                       <div className="flex-1 min-w-0">
@@ -1922,7 +1949,7 @@ const ExegesisOverlay: React.FC<{
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setPendingRemoveWord(null)} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors">취소</button>
-                    <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== pendingRemoveWord)); setPendingRemoveWord(null); }} className="px-4 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition-all active:scale-95">제거</button>
+                    <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== pendingRemoveWord)); onRemoveWord(pendingRemoveWord!); setPendingRemoveWord(null); }} className="px-4 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition-all active:scale-95">제거</button>
                   </div>
                 </div>
               )}
