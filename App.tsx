@@ -1801,7 +1801,7 @@ const StudySection: React.FC<{
         </div>
       </div>
 
-      <h2 className="text-4xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline gap-6">
+      <h2 className="text-4xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline justify-between">
         {section.range}
         <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest px-2 py-0.5">Easy Bible</span>
       </h2>
@@ -1871,8 +1871,8 @@ const StudySection: React.FC<{
       </div>
 
       <div className="flex gap-4 mt-10">
-        <button onClick={onExegesis} className="flex-1 btn-analogue bg-accent-black text-white py-5 shadow-card">
-          <BookText className="w-4 h-4" /> VERSE-BY-VERSE ANALYSIS
+        <button onClick={onExegesis} className="flex-1 btn-analogue bg-accent-black text-white py-4 shadow-card text-[10px]">
+          <BookText className="w-4 h-4" /> 구절별 해설 보기
         </button>
         <button onClick={() => setShowNote(true)} className={`p-5 rounded-full border transition-all shadow-subtle ${note ? `bg-bg-paper border-accent-blue text-accent-blue` : 'bg-bg-primary border-border-light text-text-tertiary hover:border-accent-black hover:text-accent-black'}`}>
           <PenLine className="w-5 h-5" />
