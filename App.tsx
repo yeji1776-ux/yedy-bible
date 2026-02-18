@@ -1034,36 +1034,36 @@ const Dashboard: React.FC<{
       <div className="space-y-8">
         <div className="sticker-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <span className={`badge-archival bg-accent-blue`}>Old Testament</span>
+            <span className={`badge-archival bg-accent-blue`}>구약성경</span>
           </div>
           <BookGrid books={otBooks} currentBookName={otPos.bookName} color="accent-blue" />
           <div className="mt-5 pt-4 border-t border-border-light flex justify-between items-center">
-            <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">Current Position</span>
+            <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">현재 위치</span>
             <span className="text-xs font-black text-text-primary serif-text">{otPos.text}</span>
           </div>
         </div>
 
         <div className="sticker-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <span className={`badge-archival bg-accent-green`}>New Testament</span>
+            <span className={`badge-archival bg-accent-green`}>신약성경</span>
           </div>
           <BookGrid books={ntBooks} currentBookName={ntPos.bookName} color="accent-green" />
           <div className="mt-5 pt-4 border-t border-border-light flex justify-between items-center">
-            <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">Current Position</span>
+            <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">현재 위치</span>
             <span className="text-xs font-black text-text-primary serif-text">{ntPos.text}</span>
           </div>
         </div>
       </div>
 
       <div className="bg-bg-secondary rounded-xl p-6 border border-border-light paper-texture shadow-inner">
-        <h3 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-4">Assigned Reading Portfolio</h3>
+        <h3 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-4">오늘의 읽기 범위</h3>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">Archive 01 / OT</span>
+            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">구약</span>
             <span className="text-xs font-black text-text-primary serif-text">{todayOtRange}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">Archive 02 / NT</span>
+            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">신약</span>
             <span className="text-xs font-black text-text-primary serif-text">{todayNtRange}</span>
           </div>
         </div>
@@ -1073,7 +1073,7 @@ const Dashboard: React.FC<{
         onClick={onStartReading}
         className="btn-analogue w-full py-5 bg-accent-black text-white"
       >
-        <BookOpen className="w-4 h-4" /> COMMENCE DAILY RESEARCH
+        <BookOpen className="w-4 h-4" /> 오늘의 말씀 읽기
       </button>
     </div>
   );
@@ -1763,7 +1763,7 @@ const StudySection: React.FC<{
   note: string,
   onSaveNote: (note: string) => void
 }> = ({ type, section, fontSize, onExegesis, onCopy, copiedId, accentColor, note, onSaveNote }) => {
-  const label = type === 'old' ? 'Old Testament' : 'New Testament';
+  const label = type === 'old' ? '구약성경' : '신약성경';
   const [isPlaying, setIsPlaying] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
