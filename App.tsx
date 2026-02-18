@@ -37,7 +37,8 @@ import {
   Palette,
   ChevronDown,
   PenLine,
-  BarChart3
+  BarChart3,
+  LogOut
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, streamFullBibleText, getDeepReflection, playTTS, fetchWordMeaning } from './services/geminiService';
@@ -45,6 +46,29 @@ import { loadPlan, savePlan, loadHistory, markDatesStatus, loadReflectionCache, 
 
 const APP_PASSWORD = '0516';
 
+const KR_FONTS = [
+  { name: 'Pretendard', family: "'Pretendard', sans-serif", desc: '깔끔한 고딕' },
+  { name: 'Noto Sans KR', family: "'Noto Sans KR', sans-serif", desc: '구글 기본 고딕' },
+  { name: 'Noto Serif KR', family: "'Noto Serif KR', serif", desc: '격조 있는 명조' },
+  { name: 'Gothic A1', family: "'Gothic A1', sans-serif", desc: '모던 고딕' },
+  { name: 'Gowun Batang', family: "'Gowun Batang', serif", desc: '따뜻한 바탕체' },
+];
+
+const EN_FONTS = [
+  { name: 'IBM Plex Sans', family: "'IBM Plex Sans', sans-serif", desc: 'Clean & Neutral' },
+  { name: 'Inter', family: "'Inter', sans-serif", desc: 'Modern Classic' },
+  { name: 'DM Sans', family: "'DM Sans', sans-serif", desc: 'Geometric' },
+  { name: 'Libre Baskerville', family: "'Libre Baskerville', serif", desc: 'Elegant Serif' },
+  { name: 'Space Grotesk', family: "'Space Grotesk', sans-serif", desc: 'Retro Minimal' },
+];
+
+const VINTAGE_THEMES = [
+  { name: '먹빛', accent: '#1A1A1A', sub: '#4A4A4A', bg: '#FDFDFD', paper: '#F5F2ED', desc: '차분한 흑백' },
+  { name: '고서', accent: '#5C4033', sub: '#8B7355', bg: '#FAF6F0', paper: '#F0E8DA', desc: '오래된 책갈피' },
+  { name: '잉크', accent: '#2C3E50', sub: '#4A5D74', bg: '#F8FAFB', paper: '#EDF1F4', desc: '깊은 남색 잉크' },
+  { name: '이끼', accent: '#3D4F3D', sub: '#5B6D5B', bg: '#F9FAF7', paper: '#EEF2E8', desc: '숲속 빈티지' },
+  { name: '벽돌', accent: '#6B3A3A', sub: '#8B4E4E', bg: '#FBF8F7', paper: '#F3ECE8', desc: '따뜻한 적벽돌' },
+];
 
 const SettingsPanel: React.FC<{
   fontSize: number;
@@ -52,94 +76,218 @@ const SettingsPanel: React.FC<{
   onEditPlan?: () => void;
   onReset: () => void;
   onClose: () => void;
-}> = ({ fontSize, onFontSizeChange, onEditPlan, onReset, onClose }) => (
+  krFont: number;
+  enFont: number;
+  themeIdx: number;
+  onKrFont: (i: number) => void;
+  onEnFont: (i: number) => void;
+  onTheme: (i: number) => void;
+  onLogout: () => void;
+}> = ({ fontSize, onFontSizeChange, onEditPlan, onReset, onClose, krFont, enFont, themeIdx, onKrFont, onEnFont, onTheme, onLogout }) => {
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const toggle = (key: string) => setOpenSection(prev => prev === key ? null : key);
+
+  return (
   <div className="fixed inset-0 z-50 bg-accent-black/40 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200" onClick={onClose}>
-    <div className="bg-bg-primary w-full max-w-2xl rounded-t-3xl p-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
-      <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-8" />
-      <div className="flex items-center gap-3 mb-8">
+    <div className="bg-bg-primary w-full max-w-2xl rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
+      <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-6" />
+      <div className="flex items-center gap-3 mb-6">
         <Settings className="w-5 h-5 text-accent-black" />
-        <h3 className="text-xl font-black text-text-primary serif-text uppercase tracking-tighter">Application Archive Settings</h3>
+        <h3 className="text-lg font-black text-text-primary tracking-tight">설정</h3>
       </div>
 
-      <div className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
-          <TypeIcon className="w-4 h-4 text-text-tertiary" />
-          <h4 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Digital Typeface Size</h4>
-        </div>
-        <div className="flex items-center gap-6 bg-bg-secondary rounded-2xl p-6 border border-border-light shadow-inner">
-          <button onClick={() => onFontSizeChange(Math.max(14, fontSize - 1))} disabled={fontSize <= 14} className="w-10 h-10 flex items-center justify-center bg-bg-primary border border-border-light rounded-xl text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Minus className="w-4 h-4" /></button>
-          <div className="flex-1 text-center">
-            <span className="text-2xl font-mono font-black text-text-primary tabular-nums">{fontSize}pt</span>
+      <div className="space-y-2 mb-6">
+        {/* 글자 크기 */}
+        <button onClick={() => toggle('size')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
+          <div className="flex items-center gap-2">
+            <TypeIcon className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-primary">글자 크기</span>
           </div>
-          <button onClick={() => onFontSizeChange(Math.min(24, fontSize + 1))} disabled={fontSize >= 24} className="w-10 h-10 flex items-center justify-center bg-bg-primary border border-border-light rounded-xl text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Plus className="w-4 h-4" /></button>
-        </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-text-tertiary">{fontSize}pt</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform ${openSection === 'size' ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+        {openSection === 'size' && (
+          <div className="flex items-center gap-4 bg-bg-secondary rounded-xl p-3 border border-border-light mx-2">
+            <button onClick={() => onFontSizeChange(Math.max(14, fontSize - 1))} disabled={fontSize <= 14} className="w-8 h-8 flex items-center justify-center bg-bg-primary border border-border-light rounded-lg text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Minus className="w-3 h-3" /></button>
+            <div className="flex-1 text-center">
+              <span className="text-base font-mono font-black text-text-primary tabular-nums">{fontSize}pt</span>
+            </div>
+            <button onClick={() => onFontSizeChange(Math.min(24, fontSize + 1))} disabled={fontSize >= 24} className="w-8 h-8 flex items-center justify-center bg-bg-primary border border-border-light rounded-lg text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Plus className="w-3 h-3" /></button>
+          </div>
+        )}
+
+        {/* 한글 서체 */}
+        <button onClick={() => toggle('krFont')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
+          <div className="flex items-center gap-2">
+            <TypeIcon className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-primary">한글 서체</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-tertiary">{KR_FONTS[krFont].name}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform ${openSection === 'krFont' ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+        {openSection === 'krFont' && (
+          <div className="space-y-1.5 mx-2">
+            {KR_FONTS.map((f, i) => (
+              <button key={i} onClick={() => onKrFont(i)} className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${krFont === i ? 'border-accent-black bg-bg-secondary' : 'border-border-light hover:border-border-medium'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-text-primary" style={{ fontFamily: f.family }}>{f.name}</span>
+                  <span className="text-[10px] text-text-tertiary">{f.desc}</span>
+                </div>
+                <span className="text-[11px] text-text-secondary" style={{ fontFamily: f.family }}>가나다라 말씀</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* 영문 서체 */}
+        <button onClick={() => toggle('enFont')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
+          <div className="flex items-center gap-2">
+            <TypeIcon className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-primary">영문 서체</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-tertiary">{EN_FONTS[enFont].name}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform ${openSection === 'enFont' ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+        {openSection === 'enFont' && (
+          <div className="space-y-1.5 mx-2">
+            {EN_FONTS.map((f, i) => (
+              <button key={i} onClick={() => onEnFont(i)} className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${enFont === i ? 'border-accent-black bg-bg-secondary' : 'border-border-light hover:border-border-medium'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-text-primary" style={{ fontFamily: f.family }}>{f.name}</span>
+                  <span className="text-[10px] text-text-tertiary">{f.desc}</span>
+                </div>
+                <span className="text-[11px] text-text-secondary" style={{ fontFamily: f.family }}>Archive Bible</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* 색상 테마 */}
+        <button onClick={() => toggle('theme')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
+          <div className="flex items-center gap-2">
+            <Palette className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-primary">색상 테마</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: VINTAGE_THEMES[themeIdx].accent }} />
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: VINTAGE_THEMES[themeIdx].sub }} />
+            </div>
+            <span className="text-xs text-text-tertiary">{VINTAGE_THEMES[themeIdx].name}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform ${openSection === 'theme' ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+        {openSection === 'theme' && (
+          <div className="space-y-1.5 mx-2">
+            {VINTAGE_THEMES.map((t, i) => (
+              <button key={i} onClick={() => onTheme(i)} className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${themeIdx === i ? 'border-accent-black bg-bg-secondary' : 'border-border-light hover:border-border-medium'}`}>
+                <div className="flex gap-1 shrink-0">
+                  <div className="w-5 h-5 rounded" style={{ backgroundColor: t.accent }} />
+                  <div className="w-5 h-5 rounded" style={{ backgroundColor: t.sub }} />
+                  <div className="w-5 h-5 rounded border border-border-light" style={{ backgroundColor: t.paper }} />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-sm font-bold text-text-primary">{t.name}</span>
+                  <span className="text-[10px] text-text-tertiary ml-2">{t.desc}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="space-y-4 pt-4 border-t border-border-light">
+      <div className="space-y-3 pt-4 border-t border-border-light">
         {onEditPlan && (
           <button onClick={() => { onEditPlan(); onClose(); }} className="btn-analogue w-full flex items-center justify-center gap-2 hover:bg-accent-black hover:text-white transition-all">
-            <Edit2 className="w-4 h-4" /> MODIFY READING ARCHIVE
+            <Edit2 className="w-4 h-4" /> 통독 계획 수정
           </button>
         )}
         <button
-          onClick={() => { if (confirm("모든 데이터를 초기화하시겠습니까?")) onReset(); }}
-          className="w-full bg-bg-primary text-accent-red py-4 rounded-full font-bold text-[10px] hover:bg-accent-red/5 transition-all border border-accent-red/20 uppercase tracking-widest"
+          onClick={() => { onLogout(); onClose(); }}
+          className="w-full bg-bg-primary text-text-secondary py-3.5 rounded-full font-bold text-[10px] hover:bg-bg-secondary transition-all border border-border-light flex items-center justify-center gap-2 uppercase tracking-widest"
         >
-          RESET ALL ARCHIVAL DATA
+          <LogOut className="w-3.5 h-3.5" /> 로그아웃
+        </button>
+        <button
+          onClick={() => { if (confirm("모든 데이터를 초기화하시겠습니까?")) onReset(); }}
+          className="w-full bg-bg-primary text-accent-red py-3.5 rounded-full font-bold text-[10px] hover:bg-accent-red/5 transition-all border border-accent-red/20 uppercase tracking-widest"
+        >
+          데이터 초기화
         </button>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
+  const maxLen = 4;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === APP_PASSWORD) {
-      sessionStorage.setItem('yedy_bible_auth', 'true');
-      onAuth();
-    } else {
-      setError(true);
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+  const handleKey = (num: string) => {
+    if (password.length >= maxLen) return;
+    const next = password + num;
+    setError(false);
+    setPassword(next);
+    if (next.length === maxLen) {
+      if (next === APP_PASSWORD) {
+        sessionStorage.setItem('yedy_bible_auth', 'true');
+        onAuth();
+      } else {
+        setError(true);
+        setShake(true);
+        setTimeout(() => { setShake(false); setPassword(''); }, 500);
+      }
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center p-6 bg-secondary">
-      <div className={`w-full max-w-sm ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
-        <div className="sticker-card mb-10 text-center">
-          <div className="bg-bg-paper w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-border-light shadow-inner">
-            <BookText className="w-10 h-10 text-accent-blue" />
-          </div>
-          <h1 className="text-3xl font-black text-text-primary tracking-tight serif-text">Yedy's Bible</h1>
-          <p className="text-text-tertiary text-xs mt-3 uppercase tracking-widest font-bold">Personal Archive · Daily Journey</p>
+  const handleDelete = () => {
+    setPassword(prev => prev.slice(0, -1));
+    setError(false);
+  };
 
-          <form onSubmit={handleSubmit} className="space-y-4 mt-10">
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
-              <input
-                type="password"
-                value={password}
-                onChange={e => { setPassword(e.target.value); setError(false); }}
-                placeholder="ACCESS CODE"
-                className={`w-full pl-11 pr-4 py-4 bg-bg-primary border rounded-xl text-sm font-mono outline-none transition-all ${error ? 'border-accent-red focus:ring-1 focus:ring-accent-red' : 'border-border-light focus:border-accent-black'
-                  }`}
-                autoFocus
-              />
-            </div>
-            {error && <p className="text-accent-red text-[10px] font-black tracking-widest text-center uppercase">INVALID CODE</p>}
-            <button
-              type="submit"
-              className="btn-analogue w-full"
-            >
-              AUTHENTICATE
+  return (
+    <div className="min-h-screen bg-bg-secondary flex flex-col items-center justify-center p-6">
+      <div className={`w-full max-w-xs ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
+        <div className="text-center mb-10">
+          <div className="bg-accent-black w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
+            <Hexagon className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">Yedy's Bible</h1>
+          <p className="text-text-tertiary text-[10px] mt-2 uppercase tracking-widest font-bold">암호를 입력하세요</p>
+        </div>
+
+        <div className="flex justify-center gap-4 mb-8">
+          {Array.from({ length: maxLen }).map((_, i) => (
+            <div key={i} className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
+              error ? 'bg-accent-red border-accent-red' :
+              i < password.length ? 'bg-accent-black border-accent-black scale-110' : 'border-border-medium bg-transparent'
+            }`} />
+          ))}
+        </div>
+        {error && <p className="text-accent-red text-[10px] font-black tracking-widest text-center mb-4">잘못된 암호입니다</p>}
+
+        <div className="grid grid-cols-3 gap-3">
+          {['1','2','3','4','5','6','7','8','9'].map(n => (
+            <button key={n} onClick={() => handleKey(n)} className="h-14 rounded-xl bg-bg-primary border border-border-light text-lg font-bold text-text-primary hover:bg-bg-paper active:scale-95 transition-all shadow-sm">
+              {n}
             </button>
-          </form>
+          ))}
+          <div />
+          <button onClick={() => handleKey('0')} className="h-14 rounded-xl bg-bg-primary border border-border-light text-lg font-bold text-text-primary hover:bg-bg-paper active:scale-95 transition-all shadow-sm">
+            0
+          </button>
+          <button onClick={handleDelete} className="h-14 rounded-xl bg-bg-primary border border-border-light text-text-tertiary hover:bg-bg-paper active:scale-95 transition-all shadow-sm flex items-center justify-center">
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </div>
       <style>{`
@@ -225,7 +373,7 @@ const Header: React.FC<{
       <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => onRefresh ? onRefresh() : window.location.reload()}>
           <div className="w-8 h-8 bg-accent-black flex items-center justify-center rounded">
-            <span className="text-white font-mono text-sm font-bold">Y</span>
+            <Hexagon className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
             <h1 className="text-base font-black text-text-primary tracking-tight serif-text">Yedy's Bible</h1>
@@ -947,9 +1095,9 @@ const ChatPanel: React.FC<{
           <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-6" />
           <div className="flex items-center gap-3">
             <MessageSquare className="w-5 h-5 text-accent-blue" />
-            <h3 className="text-xl font-black text-text-primary serif-text uppercase tracking-tighter">AI Archival Consultant</h3>
+            <h3 className="text-xl font-black text-text-primary serif-text tracking-tighter">궁그미 챗봇</h3>
           </div>
-          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-2">Spiritual inquisition and research assistant</p>
+          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-2">오늘 읽은 말씀에 대해 자유롭게 질문하세요</p>
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 paper-texture">
@@ -958,9 +1106,9 @@ const ChatPanel: React.FC<{
               <div className="w-16 h-16 bg-bg-paper rounded-2xl flex items-center justify-center mx-auto mb-8 border border-border-light shadow-inner sticker-card after:content-none before:left-1/2 before:-translate-x-1/2 before:w-10 before:top-[-8px]">
                 <MessageSquare className="w-8 h-8 text-text-tertiary opacity-30" />
               </div>
-              <p className="text-xs font-black text-text-tertiary uppercase tracking-widest mb-8">Initiate research parameters</p>
+              <p className="text-xs font-black text-text-tertiary tracking-widest mb-8">궁금한 것을 물어보세요</p>
               <div className="grid grid-cols-1 gap-3">
-                {['Historical background of the text?', 'Primary theological implications?', 'Sociological context of the era?'].map((q, i) => (
+                {['이 본문의 역사적 배경은?', '핵심 신학적 메시지는?', '당시 시대적 상황은?'].map((q, i) => (
                   <button key={i} onClick={() => setInput(q)} className="block w-full text-left text-[10px] font-black text-text-secondary bg-bg-primary border border-border-light hover:border-accent-black px-5 py-3 rounded-xl transition-all uppercase tracking-widest shadow-subtle">
                     {q}
                   </button>
@@ -993,12 +1141,12 @@ const ChatPanel: React.FC<{
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder="Inquire here..."
+              placeholder="질문을 입력하세요..."
               className="flex-1 bg-bg-primary border border-border-light rounded-xl px-5 py-4 text-sm font-bold outline-none focus:border-accent-black shadow-subtle"
               autoFocus
             />
             <button onClick={handleSend} disabled={loading || !input.trim()} className="btn-analogue bg-accent-black text-white px-6">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'SEND'}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '전송'}
             </button>
           </div>
         </div>
@@ -1060,6 +1208,9 @@ const App: React.FC = () => {
   const [reflection, setReflection] = useState<DailyReflection | null>(null);
   const [aiState, setAiState] = useState<AIState>({ loading: false, error: null, detailedExegesis: null, reflectionResponse: null });
   const [fontSize, setFontSize] = useState<number>(16);
+  const [krFont, setKrFont] = useState<number>(() => { try { return parseInt(localStorage.getItem('bible_kr_font') || '0'); } catch { return 0; } });
+  const [enFont, setEnFont] = useState<number>(() => { try { return parseInt(localStorage.getItem('bible_en_font') || '0'); } catch { return 0; } });
+  const [themeIdx, setThemeIdx] = useState<number>(() => { try { return parseInt(localStorage.getItem('bible_theme_idx') || '0'); } catch { return 0; } });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([]);
@@ -1071,6 +1222,16 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'home' | 'reading'>('home');
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    const t = VINTAGE_THEMES[themeIdx] || VINTAGE_THEMES[0];
+    const root = document.documentElement;
+    root.style.setProperty('--color-accent-black', t.accent);
+    root.style.setProperty('--color-accent-blue', t.sub);
+    root.style.setProperty('--color-bg-primary', t.bg);
+    root.style.setProperty('--color-bg-paper', t.paper);
+  }, [themeIdx]);
+
   const [savedWords, setSavedWords] = useState<Record<string, Array<{ word: string; meaning: string }>>>(() => {
     try { const s = localStorage.getItem('bible_saved_words'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
@@ -1356,7 +1517,7 @@ const App: React.FC = () => {
   const todayNtRange = getReadingPortion(BIBLE_METADATA.NT, plan.ntBook, plan.ntStartChapter, todayDayDiff, plan.ntChaptersPerDay);
 
   return (
-    <div className="max-w-2xl mx-auto min-h-screen bg-bg-primary shadow-2xl border-x border-border-light pb-24 font-sans selection:bg-accent-black selection:text-white">
+    <div className="max-w-2xl mx-auto min-h-screen bg-bg-primary shadow-2xl border-x border-border-light pb-24 selection:bg-accent-black selection:text-white" style={{ fontFamily: `${KR_FONTS[krFont]?.family || KR_FONTS[0].family}, ${EN_FONTS[enFont]?.family || EN_FONTS[0].family}` }}>
       <Header
         onSettings={() => setShowSettings(true)}
         onShowBookmarks={() => setShowBookmarks(true)}
@@ -1438,12 +1599,12 @@ const App: React.FC = () => {
                   onSaveNote={(n) => handleSaveNote('new', n)}
                 />
               )}
-              <div className="bg-accent-blue rounded-xl p-10 shadow-card mb-16 sticker-card before:bg-white/20 before:w-16 before:h-6 before:top-[-10px] before:left-1/2 before:-translate-x-1/2">
-                <div className="flex items-center gap-3 mb-6 text-white/70">
+              <div className="rounded-xl p-10 shadow-card mb-16 sticker-card">
+                <div className="flex items-center gap-3 mb-6 text-text-tertiary">
                   <MessageCircle className="w-5 h-5" />
                   <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">DAILY JOURNAL ENTRY</h3>
                 </div>
-                <p className="text-white font-bold text-lg mb-8 leading-relaxed" style={{ fontSize: `${fontSize}px` }}>{reflection.meditation_question}</p>
+                <p className="text-text-primary font-bold text-lg mb-8 leading-relaxed" style={{ fontSize: `${fontSize}px` }}>{reflection.meditation_question}</p>
                 <button
                   onClick={async () => {
                     setAiState(prev => ({ ...prev, loading: true }));
@@ -1456,7 +1617,7 @@ const App: React.FC = () => {
                   EXPAND DEEP ARCHIVE
                 </button>
                 {aiState.reflectionResponse && (
-                  <div className="mt-8 bg-black/10 backdrop-blur-sm p-8 rounded-xl text-white/90 leading-relaxed whitespace-pre-wrap font-medium border border-white/5 serif-text" style={{ fontSize: `${fontSize}px` }}>
+                  <div className="mt-8 bg-bg-paper p-8 rounded-xl text-text-secondary leading-relaxed whitespace-pre-wrap font-medium border border-border-light serif-text" style={{ fontSize: `${fontSize}px` }}>
                     {aiState.reflectionResponse}
                   </div>
                 )}
@@ -1545,14 +1706,23 @@ const App: React.FC = () => {
           onEditPlan={plan ? () => setIsEditingPlan(true) : undefined}
           onReset={handleReset}
           onClose={() => setShowSettings(false)}
+          krFont={krFont}
+          enFont={enFont}
+          themeIdx={themeIdx}
+          onKrFont={(i) => { setKrFont(i); localStorage.setItem('bible_kr_font', i.toString()); }}
+          onEnFont={(i) => { setEnFont(i); localStorage.setItem('bible_en_font', i.toString()); }}
+          onTheme={(i) => { setThemeIdx(i); localStorage.setItem('bible_theme_idx', i.toString()); }}
+          onLogout={() => { sessionStorage.removeItem('yedy_bible_auth'); setIsAuthed(false); }}
         />
       )}
 
       {aiState.loading && (
-        <div className="fixed inset-0 z-[60] bg-white/40 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 flex flex-col items-center">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-5" />
-            <p className="text-gray-900 font-black text-sm">깊이 살피는 중...</p>
+        <div className="fixed inset-0 z-[60] bg-bg-primary/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-bg-primary p-10 rounded-2xl border border-border-light shadow-card flex flex-col items-center">
+            <div className="w-14 h-14 bg-accent-black rounded-xl flex items-center justify-center mb-6">
+              <Hexagon className="w-7 h-7 text-white animate-spin" />
+            </div>
+            <p className="text-text-primary font-black text-xs uppercase tracking-widest">깊이 살피는 중...</p>
           </div>
         </div>
       )}
