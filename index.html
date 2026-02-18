@@ -1,31 +1,57 @@
-
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Yedy's Bible">
+    <meta name="apple-mobile-web-app-title" content="Yedy Archive">
     <title>Yedy's Bible</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-primary': '#FDFDFD',
+                        'bg-secondary': '#FAF9F6',
+                        'bg-paper': '#F5F2ED',
+                        'text-primary': '#1A1A1A',
+                        'text-secondary': '#525252',
+                        'text-tertiary': '#8A8A8A',
+                        'accent-black': '#000000',
+                        'accent-blue': '#4A5D74',
+                        'accent-green': '#5B6D5B',
+                        'accent-red': '#8B4E4E',
+                        'accent-yellow': '#B49A67',
+                        'border-light': '#E5E5E5',
+                        'border-medium': '#D4D4D4',
+                        'success': '#4A5D74',
+                        'fail': '#8B4E4E',
+                        'info': '#5B6D5B',
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard', 'sans-serif'],
+                        mono: ['Courier New', 'monospace'],
+                        serif: ['Apple SD Gothic Neo', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            background-color: #f8f9fa;
-            color: #212529;
-            -webkit-font-smoothing: antialiased;
-        }
-        .dotum-font {
-            font-family: 'Pretendard', sans-serif;
+            overscroll-behavior-y: none;
         }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
@@ -37,10 +63,12 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/index.css">
 </head>
+
 <body>
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

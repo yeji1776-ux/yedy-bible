@@ -1,0 +1,214 @@
+/* Analogue Keeper Inspired Design System */
+:root {
+  /* Colors from design.json */
+  --bg-primary: #FDFDFD;
+  --bg-secondary: #FAF9F6;
+  --bg-paper: #F5F2ED;
+
+  --text-primary: #1A1A1A;
+  --text-secondary: #525252;
+  --text-tertiary: #8A8A8A;
+  --text-on-accent: #FFFFFF;
+
+  --accent-black: #000000;
+  --accent-blue: #4A5D74;
+  --accent-green: #5B6D5B;
+  --accent-red: #8B4E4E;
+  --accent-yellow: #B49A67;
+
+  --border-light: #E5E5E5;
+  --border-medium: #D4D4D4;
+  --border-dark: #1A1A1A;
+
+  --status-success: #4A5D74;
+  --status-fail: #8B4E4E;
+  --status-info: #5B6D5B;
+
+  /* Typography */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-serif: 'Apple SD Gothic Neo', 'Malgun Gothic', serif;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+  /* Radius */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  background-image:
+    linear-gradient(rgba(245, 242, 237, 0.1), rgba(245, 242, 237, 0.1)),
+    url("https://www.transparenttextures.com/patterns/natural-paper.png");
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Archival Badge Style */
+.badge-archival {
+  background-color: var(--accent-black);
+  color: var(--text-on-accent);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: inline-block;
+  border-radius: var(--radius-sm);
+}
+
+/* Sticker-like Card Style */
+.sticker-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-subtle);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 1.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.sticker-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.sticker-card::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 30px;
+  width: 45px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.04);
+  /* Tape effect */
+  transform: rotate(-2deg);
+  backdrop-filter: blur(1px);
+}
+
+/* Typography Enhancements */
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  margin: 0;
+}
+
+.mono-detail {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.serif-text {
+  font-family: var(--font-serif);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 10px;
+}
+
+/* Layout Utilities */
+.content-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.divider-pipe {
+  border-left: 1px solid var(--border-medium);
+  height: 14px;
+  margin: 0 12px;
+  display: inline-block;
+}
+
+/* Buttons */
+.btn-analogue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--accent-black);
+  background: transparent;
+  color: var(--accent-black);
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: var(--radius-full);
+}
+
+.btn-analogue:hover {
+  background: var(--accent-black);
+  color: var(--text-on-accent);
+}
+
+.btn-analogue-pill {
+  border: 1px solid var(--border-medium);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-analogue-pill:hover {
+  border-color: var(--accent-black);
+  color: var(--accent-black);
+}
+
+/* Form Elements */
+input,
+select {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent-blue);
+}
+
+/* Background textures */
+.paper-texture {
+  background-color: var(--bg-paper);
+  background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+}

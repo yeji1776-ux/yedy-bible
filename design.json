@@ -1,0 +1,97 @@
+{
+    "brand": "Analogue Keeper Inspired",
+    "theme": {
+        "colors": {
+            "background": {
+                "primary": "#FDFDFD",
+                "secondary": "#FAF9F6",
+                "paper": "#F5F2ED"
+            },
+            "text": {
+                "primary": "#1A1A1A",
+                "secondary": "#525252",
+                "tertiary": "#8A8A8A",
+                "on-accent": "#FFFFFF"
+            },
+            "accent": {
+                "black": "#000000",
+                "blue": "#4A5D74",
+                "green": "#5B6D5B",
+                "red": "#8B4E4E",
+                "yellow": "#B49A67"
+            },
+            "border": {
+                "light": "#E5E5E5",
+                "medium": "#D4D4D4",
+                "dark": "#1A1A1A"
+            },
+            "status": {
+                "success": "#4A5D74",
+                "fail": "#8B4E4E",
+                "info": "#5B6D5B"
+            }
+        },
+        "typography": {
+            "fontFamily": {
+                "sans": "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                "mono": "'Courier New', Courier, monospace",
+                "serif": "'Apple SD Gothic Neo', 'Malgun Gothic', serif"
+            },
+            "fontSize": {
+                "xs": "0.75rem",
+                "sm": "0.875rem",
+                "base": "1rem",
+                "lg": "1.125rem",
+                "xl": "1.25rem",
+                "2xl": "1.5rem"
+            },
+            "fontWeight": {
+                "light": 300,
+                "normal": 400,
+                "medium": 500,
+                "semibold": 600,
+                "bold": 700,
+                "black": 900
+            }
+        },
+        "spacing": {
+            "px": "1px",
+            "1": "0.25rem",
+            "2": "0.5rem",
+            "3": "0.75rem",
+            "4": "1rem",
+            "6": "1.5rem",
+            "8": "2rem",
+            "12": "3rem"
+        },
+        "borderRadius": {
+            "none": "0",
+            "sm": "0.125rem",
+            "md": "0.375rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "full": "9999px"
+        },
+        "shadows": {
+            "none": "none",
+            "subtle": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+            "card": "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)"
+        }
+    },
+    "aesthetic_tokens": {
+        "vibe": "archival, tactile, warm, organized",
+        "keywords": [
+            "analogue",
+            "personal archive",
+            "methodical",
+            "slow living"
+        ],
+        "ui_patterns": {
+            "badges": "solid black with white text, all caps, small font",
+            "separators": "vertical pipe (|) or thin light borders",
+            "images": "clean background, hand-held or in-use shots",
+            "interaction": "pill-shaped outlines, subtle hover effects"
+        }
+    }
+}
