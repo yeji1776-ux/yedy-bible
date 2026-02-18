@@ -203,6 +203,13 @@ const SettingsPanel: React.FC<{
         )}
       </div>
 
+      <button
+        onClick={onClose}
+        className="w-full bg-accent-black text-white py-4 rounded-full font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-2 mb-6"
+      >
+        <Check className="w-4 h-4" /> 저장하고 닫기
+      </button>
+
       <div className="space-y-3 pt-4 border-t border-border-light">
         <button
           onClick={() => {
