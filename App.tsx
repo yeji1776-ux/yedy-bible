@@ -261,7 +261,7 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
           <div className="bg-accent-black w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
             <Hexagon className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Yedy's Bible</h1>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">Hare's Bible</h1>
           <p className="text-text-tertiary text-[10px] mt-2 uppercase tracking-widest font-bold">암호를 입력하세요</p>
         </div>
 
@@ -376,7 +376,7 @@ const Header: React.FC<{
             <Hexagon className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-black text-text-primary tracking-tight serif-text">Yedy's Bible</h1>
+            <h1 className="text-base font-black text-text-primary tracking-tight serif-text">Hare's Bible</h1>
             <p className="text-[9px] font-bold text-text-tertiary uppercase tracking-tighter -mt-1">Volume. 01</p>
           </div>
         </div>
@@ -900,7 +900,7 @@ const MiniCalendar: React.FC<{
                   onClose();
                 }}
                 className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold transition-all
-                  ${isSelected(day) ? 'bg-blue-600 text-white font-bold' : isToday(day) ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-700 hover:bg-gray-100'}
+                  ${isSelected(day) ? 'bg-accent-black text-white font-bold' : isToday(day) ? 'bg-bg-paper text-accent-black font-bold' : 'text-text-secondary hover:bg-bg-secondary'}
                 `}
               >
                 {day}
@@ -1038,11 +1038,11 @@ const Dashboard: React.FC<{
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">Archive 01 / OT</span>
-            <span className="text-sm font-black text-text-primary serif-text">{todayOtRange}</span>
+            <span className="text-xs font-black text-text-primary serif-text">{todayOtRange}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">Archive 02 / NT</span>
-            <span className="text-sm font-black text-text-primary serif-text">{todayNtRange}</span>
+            <span className="text-xs font-black text-text-primary serif-text">{todayNtRange}</span>
           </div>
         </div>
       </div>
@@ -1485,13 +1485,13 @@ const App: React.FC = () => {
   if (!isAuthed) return <PasswordGate onAuth={() => setIsAuthed(true)} />;
 
   if (!dataLoaded) return (
-    <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+    <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-accent-black animate-spin" />
     </div>
   );
 
   if (!plan || isEditingPlan) return (
-    <div className="min-h-screen bg-[#FDFDFD]">
+    <div className="min-h-screen bg-bg-primary">
       <Header />
       <SetupView
         currentPlan={plan}
@@ -1562,8 +1562,8 @@ const App: React.FC = () => {
         <main className="p-5 space-y-12">
           {aiState.loading && !reflection ? (
             <div className="py-32 flex flex-col items-center justify-center space-y-5">
-              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-              <p className="text-gray-400 font-bold text-sm">말씀을 준비하고 있습니다...</p>
+              <Loader2 className="w-12 h-12 text-accent-black animate-spin" />
+              <p className="text-text-tertiary font-bold text-sm">말씀을 준비하고 있습니다...</p>
             </div>
           ) : aiState.error ? (
             <div className="py-20 flex flex-col items-center justify-center text-center">
@@ -1636,18 +1636,18 @@ const App: React.FC = () => {
       )}
 
       {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-white border-t border-gray-200 z-40">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-bg-primary border-t border-border-light z-40">
         <div className="flex">
           <button
             onClick={() => setCurrentView('home')}
-            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'home' ? 'text-blue-600' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'home' ? 'text-accent-black' : 'text-text-tertiary'}`}
           >
             <Home className="w-5 h-5" />
             <span className="text-[10px] font-bold">홈</span>
           </button>
           <button
             onClick={() => setCurrentView('reading')}
-            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'reading' ? 'text-blue-600' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'reading' ? 'text-accent-black' : 'text-text-tertiary'}`}
           >
             <BookOpen className="w-5 h-5" />
             <span className="text-[10px] font-bold">읽기</span>
@@ -1786,9 +1786,9 @@ const StudySection: React.FC<{
         </div>
       </div>
 
-      <h2 className="text-4xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline gap-3">
+      <h2 className="text-4xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline gap-6">
         {section.range}
-        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest border border-border-light px-2 py-0.5 rounded">Easy Bible</span>
+        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest px-2 py-0.5">Easy Bible</span>
       </h2>
 
       <div className="space-y-6">
