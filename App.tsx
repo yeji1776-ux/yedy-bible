@@ -33,7 +33,6 @@ import {
   MessageSquare,
   Trash2,
   Home,
-  Hexagon,
   Palette,
   ChevronDown,
   PenLine,
@@ -312,7 +311,7 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
       <div className="w-full pt-14 pb-4 px-8">
         <p className="text-[10px] font-medium uppercase tracking-[0.2em] mb-5" style={{ color: 'rgba(255,255,255,0.25)' }}>Established 2025</p>
         <div className="flex items-center gap-3">
-          <Hexagon className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.4)' }} />
+          <svg viewBox="0 0 512 512" className="w-5 h-5"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="rgba(255,255,255,0.15)"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="rgba(255,255,255,0.25)"/><circle cx="262" cy="240" r="105" fill="rgba(255,255,255,0.4)"/></svg>
           <h1 className="text-[18px] font-medium uppercase tracking-[0.35em]" style={{ color: 'rgba(255,255,255,0.45)' }}>Hare's Bible</h1>
         </div>
         <div className="mt-4 w-10 h-[2px]" style={{ background: 'rgba(255,255,255,0.15)' }} />
@@ -444,8 +443,8 @@ const Header: React.FC<{
     <header className="bg-bg-primary border-b border-border-light sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => onRefresh ? onRefresh() : window.location.reload()}>
-          <div className="w-8 h-8 bg-accent-black flex items-center justify-center rounded">
-            <Hexagon className="w-4.5 h-4.5 text-white" />
+          <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden" style={{ background: '#F0F1F4' }}>
+            <svg viewBox="0 0 512 512" className="w-6 h-6"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
           </div>
           <div>
             <h1 className="text-base font-black text-text-primary tracking-tight serif-text">Hare's Bible</h1>
@@ -2190,8 +2189,8 @@ const App: React.FC = () => {
       {aiState.loading && (
         <div className="fixed inset-0 z-[60] bg-bg-primary/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-bg-primary p-10 rounded-2xl border border-border-light shadow-card flex flex-col items-center">
-            <div className="w-14 h-14 bg-accent-black rounded-xl flex items-center justify-center mb-6">
-              <Hexagon className="w-7 h-7 text-white animate-spin" />
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-6 animate-spin" style={{ background: '#F0F1F4' }}>
+              <svg viewBox="0 0 512 512" className="w-10 h-10"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
             </div>
             <p className="text-text-primary font-black text-xs uppercase tracking-widest">깊이 살피는 중...</p>
           </div>
