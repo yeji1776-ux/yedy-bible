@@ -677,87 +677,88 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
   const [startDate, setStartDate] = useState(currentPlan?.startDate ? new Date(currentPlan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
 
   return (
-    <div className="max-w-md mx-auto p-6 space-y-8 animate-in fade-in zoom-in-95 duration-500">
-      <div className="text-center space-y-3">
-        <div className="bg-bg-paper w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-subtle border border-border-light">
-          <BookOpen className="w-6 h-6 text-accent-blue" />
-        </div>
-        <h2 className="text-lg font-black text-text-primary serif-text tracking-tighter">{currentPlan ? "통독 계획 수정" : "통독 계획 설정"}</h2>
-        <p className="text-text-tertiary text-[9px] font-black leading-relaxed px-6 uppercase tracking-widest">읽기 범위와 시작일을 설정하세요</p>
-      </div>
-
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="font-black text-[9px] text-text-tertiary uppercase tracking-widest px-1 flex items-center gap-2"><CalendarDays className="w-3 h-3" /> 시작일</h3>
-          <input
-            type="date"
-            value={startDate}
-            onChange={e => setStartDate(e.target.value)}
-            className="w-full bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle"
-          />
+    <div className="max-w-sm mx-auto p-4 animate-in fade-in zoom-in-95 duration-500">
+      <div className="bg-bg-paper border border-border-light rounded-xl p-5 space-y-5 shadow-card">
+        <div className="text-center space-y-1">
+          <h2 className="text-sm font-black text-text-primary serif-text tracking-tighter">{currentPlan ? "통독 계획 수정" : "통독 계획 설정"}</h2>
+          <p className="text-text-tertiary text-[8px] font-black uppercase tracking-widest">읽기 범위와 시작일을 설정하세요</p>
         </div>
 
-        <div className="space-y-3">
-          <h3 className="font-black text-[9px] text-text-tertiary uppercase tracking-widest px-1">구약 설정</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <select value={otBook} onChange={e => setOtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
-              {(BIBLE_METADATA.OT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-            </select>
-            <div className="relative">
-              <input type="number" value={otStart} onChange={e => setOtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <h3 className="font-black text-[8px] text-text-tertiary uppercase tracking-widest px-0.5 flex items-center gap-1.5"><CalendarDays className="w-2.5 h-2.5" /> 시작일</h3>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="w-full bg-bg-primary border border-border-light rounded-lg px-2.5 py-2 text-[11px] font-mono font-bold outline-none focus:border-accent-black transition-all"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-black text-[8px] text-text-tertiary uppercase tracking-widest px-0.5">구약 설정</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <select value={otBook} onChange={e => setOtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-lg px-2.5 py-2 text-[11px] font-bold outline-none focus:border-accent-black transition-all">
+                {(BIBLE_METADATA.OT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+              </select>
+              <div className="relative">
+                <input type="number" value={otStart} onChange={e => setOtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-lg px-2.5 py-2 text-[11px] font-mono font-bold outline-none focus:border-accent-black transition-all" />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] font-black text-text-tertiary uppercase">시작 장</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] text-text-tertiary font-black uppercase tracking-widest shrink-0">하루</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button key={n} onClick={() => setOtPerDay(n)}
+                    className={`w-7 h-7 rounded-md text-[9px] font-black transition-all ${otPerDay === n ? 'bg-accent-black text-white shadow-lg' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
+                  >{n}</button>
+                ))}
+              </div>
+              <span className="text-[8px] text-text-tertiary font-black">장</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[9px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
-            <div className="flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} onClick={() => setOtPerDay(n)}
-                  className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${otPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
-                >{n}</button>
-              ))}
+
+          <div className="space-y-2">
+            <h3 className="font-black text-[8px] text-text-tertiary uppercase tracking-widest px-0.5">신약 설정</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <select value={ntBook} onChange={e => setNtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-lg px-2.5 py-2 text-[11px] font-bold outline-none focus:border-accent-black transition-all">
+                {(BIBLE_METADATA.NT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+              </select>
+              <div className="relative">
+                <input type="number" value={ntStart} onChange={e => setNtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-lg px-2.5 py-2 text-[11px] font-mono font-bold outline-none focus:border-accent-black transition-all" />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[7px] font-black text-text-tertiary uppercase">시작 장</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] text-text-tertiary font-black uppercase tracking-widest shrink-0">하루</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button key={n} onClick={() => setNtPerDay(n)}
+                    className={`w-7 h-7 rounded-md text-[9px] font-black transition-all ${ntPerDay === n ? 'bg-accent-black text-white shadow-lg' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
+                  >{n}</button>
+                ))}
+              </div>
+              <span className="text-[8px] text-text-tertiary font-black">장</span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h3 className="font-black text-[9px] text-text-tertiary uppercase tracking-widest px-1">신약 설정</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <select value={ntBook} onChange={e => setNtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
-              {(BIBLE_METADATA.NT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-            </select>
-            <div className="relative">
-              <input type="number" value={ntStart} onChange={e => setNtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[9px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
-            <div className="flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} onClick={() => setNtPerDay(n)}
-                  className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${ntPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
-                >{n}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 pt-2">
-          <button
-            onClick={() => onSave({ otBook, otStartChapter: otStart, ntBook, ntStartChapter: ntStart, startDate: new Date(startDate).toISOString(), otChaptersPerDay: otPerDay, ntChaptersPerDay: ntPerDay, isPaused: false, pausedAt: null, totalPausedDays: currentPlan?.totalPausedDays || 0 })}
-            className="btn-analogue w-full py-3.5 text-[10px] tracking-[0.2em] font-black bg-accent-black text-white"
-          >
-            {currentPlan ? "계획 수정" : "시작하기"}
-          </button>
+        <div className="flex gap-2 pt-1">
           {onCancel && (
             <button
               onClick={onCancel}
-              className="w-full bg-transparent text-text-tertiary py-2.5 rounded-xl font-black text-[10px] hover:text-accent-black transition-all uppercase tracking-widest"
+              className="flex-1 bg-bg-secondary text-text-tertiary py-2.5 rounded-lg font-black text-[9px] hover:text-accent-black transition-all uppercase tracking-widest border border-border-light"
             >
               취소
             </button>
           )}
+          <button
+            onClick={() => onSave({ otBook, otStartChapter: otStart, ntBook, ntStartChapter: ntStart, startDate: new Date(startDate).toISOString(), otChaptersPerDay: otPerDay, ntChaptersPerDay: ntPerDay, isPaused: false, pausedAt: null, totalPausedDays: currentPlan?.totalPausedDays || 0 })}
+            className={`${onCancel ? 'flex-1' : 'w-full'} btn-analogue py-2.5 text-[9px] tracking-[0.2em] font-black bg-accent-black text-white`}
+          >
+            {currentPlan ? "계획 수정" : "시작하기"}
+          </button>
         </div>
       </div>
     </div>
