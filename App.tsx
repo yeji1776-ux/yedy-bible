@@ -1837,15 +1837,12 @@ const App: React.FC = () => {
 
       {showJournal && (
         <div className="fixed inset-0 z-50 bg-bg-secondary overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
-        <header className="bg-bg-primary border-b border-border-light sticky top-0 z-10 shadow-subtle">
-          <div className="flex items-center justify-between p-6 pb-4">
-            <div>
-              <h2 className="text-xl font-black text-text-primary tracking-tighter serif-text">묵상 일지</h2>
-              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-1">나의 말씀 묵상 기록</p>
-            </div>
-            <button onClick={() => setShowJournal(false)} className="p-3 hover:bg-bg-secondary rounded-full transition-colors border border-border-light shadow-subtle"><X className="w-5 h-5" /></button>
+        <header className="bg-bg-primary border-b border-border-light sticky top-0 z-10">
+          <div className="flex items-center justify-between px-5 py-3">
+            <h2 className="text-sm font-black text-text-primary tracking-tighter serif-text">묵상 일지</h2>
+            <button onClick={() => setShowJournal(false)} className="p-1.5 hover:bg-bg-secondary rounded-lg transition-colors"><X className="w-4 h-4 text-text-tertiary" /></button>
           </div>
-          <div className="flex gap-2 px-6 pb-4">
+          <div className="flex gap-2 px-5 pb-3">
             {([['meditation', '묵상'], ['otNotes', '구약 노트'], ['ntNotes', '신약 노트']] as const).map(([key, label]) => (
               <button
                 key={key}
