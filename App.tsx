@@ -1151,55 +1151,55 @@ const Dashboard: React.FC<{
   );
 
   return (
-    <div className="p-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-black text-text-primary serif-text uppercase tracking-tighter">Mission Progress</h2>
-        <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
+    <div className="p-5 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="text-center space-y-1">
+        <h2 className="text-lg font-black text-text-primary serif-text uppercase tracking-tighter">Mission Progress</h2>
+        <p className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">
           {effectiveDayDiff >= 0 ? `Active Phase: ${String(effectiveDayDiff + 1).padStart(3, '0')}` : 'Mission Pending'}
         </p>
       </div>
 
-      <div className="space-y-8">
-        <div className="sticker-card p-6">
-          <div className="flex items-center gap-2 mb-4">
+      <div className="space-y-4">
+        <div className="sticker-card p-4">
+          <div className="flex items-center gap-2 mb-3">
             <span className={`badge-archival bg-accent-blue`}>구약성경</span>
           </div>
           <BookGrid books={otBooks} currentBookName={otPos.bookName} color="accent-blue" />
-          <div className="mt-5 pt-4 border-t border-border-light flex justify-between items-center">
+          <div className="mt-3 pt-3 border-t border-border-light flex justify-between items-center">
             <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">현재 위치</span>
-            <span className="text-xs font-black text-text-primary serif-text">{otPos.text}</span>
+            <span className="text-[11px] font-black text-text-primary serif-text">{otPos.text}</span>
           </div>
         </div>
 
-        <div className="sticker-card p-6">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="sticker-card p-4">
+          <div className="flex items-center gap-2 mb-3">
             <span className={`badge-archival bg-accent-green`}>신약성경</span>
           </div>
           <BookGrid books={ntBooks} currentBookName={ntPos.bookName} color="accent-green" />
-          <div className="mt-5 pt-4 border-t border-border-light flex justify-between items-center">
+          <div className="mt-3 pt-3 border-t border-border-light flex justify-between items-center">
             <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">현재 위치</span>
-            <span className="text-xs font-black text-text-primary serif-text">{ntPos.text}</span>
+            <span className="text-[11px] font-black text-text-primary serif-text">{ntPos.text}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-bg-secondary rounded-xl p-6 border border-border-light paper-texture shadow-inner">
-        <h3 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-4">오늘의 읽기 범위</h3>
-        <div className="space-y-3">
+      <div className="bg-bg-secondary rounded-xl p-4 border border-border-light paper-texture shadow-inner">
+        <h3 className="text-[9px] font-black text-text-tertiary uppercase tracking-widest mb-3">오늘의 읽기 범위</h3>
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">구약</span>
-            <span className="text-xs font-black text-text-primary serif-text">{todayOtRange}</span>
+            <span className="text-[9px] font-black text-text-tertiary uppercase tracking-tighter">구약</span>
+            <span className="text-[11px] font-black text-text-primary serif-text">{todayOtRange}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-tighter">신약</span>
-            <span className="text-xs font-black text-text-primary serif-text">{todayNtRange}</span>
+            <span className="text-[9px] font-black text-text-tertiary uppercase tracking-tighter">신약</span>
+            <span className="text-[11px] font-black text-text-primary serif-text">{todayNtRange}</span>
           </div>
         </div>
       </div>
 
       <button
         onClick={onStartReading}
-        className="btn-analogue w-full py-5 bg-accent-black text-white"
+        className="btn-analogue w-full py-3.5 bg-accent-black text-white text-[10px]"
       >
         <BookOpen className="w-4 h-4" /> 오늘의 말씀 읽기
       </button>
