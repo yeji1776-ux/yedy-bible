@@ -41,7 +41,8 @@ export async function fetchDailyReflection(
           role: "user",
           content: `성경 읽기 범위 - 구약: ${otRange}, 신약: ${ntRange}.
 이 범위에 대한 정보를 JSON으로 제공해주세요. vocabulary는 2-3개, figures도 2-3개로 간결하게.
-meditation_question은 오늘 구약과 신약 내용을 관통하는 가장 핵심적인 주제를 뽑아, 그 주제에 대해 삶에 적용할 수 있는 깊은 묵상 질문 1가지를 던져주세요.`,
+meditation_question은 오늘 구약과 신약 내용을 관통하는 가장 핵심적인 주제를 뽑아, 그 주제에 대해 삶에 적용할 수 있는 깊은 묵상 질문 1가지를 던져주세요.
+prayer_topics는 오늘 읽은 말씀을 바탕으로 짧고 구체적인 기도제목 2가지를 배열로 제공해주세요.`,
         },
       ],
       response_format: {
@@ -109,8 +110,12 @@ meditation_question은 오늘 구약과 신약 내용을 관통하는 가장 핵
                 additionalProperties: false,
               },
               meditation_question: { type: "string" },
+              prayer_topics: {
+                type: "array",
+                items: { type: "string" },
+              },
             },
-            required: ["old_testament", "new_testament", "meditation_question"],
+            required: ["old_testament", "new_testament", "meditation_question", "prayer_topics"],
             additionalProperties: false,
           },
         },

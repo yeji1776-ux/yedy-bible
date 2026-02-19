@@ -21,6 +21,7 @@ export interface DailyReflection {
   old_testament: BibleSection;
   new_testament: BibleSection;
   meditation_question: string;
+  prayer_topics: string[];
 }
 
 export interface ReadingPlan {

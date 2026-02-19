@@ -39,7 +39,8 @@ import {
   PenLine,
   BarChart3,
   LogOut,
-  Share2
+  Share2,
+  Heart
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, streamFullBibleText, getDeepReflection, playTTS, fetchWordMeaning } from './services/geminiService';
@@ -252,17 +253,21 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
+  const [success, setSuccess] = useState(false);
   const maxLen = 4;
 
   const handleKey = (num: string) => {
-    if (password.length >= maxLen) return;
+    if (password.length >= maxLen || success) return;
     const next = password + num;
     setError(false);
     setPassword(next);
     if (next.length === maxLen) {
       if (next === APP_PASSWORD) {
-        sessionStorage.setItem('yedy_bible_auth', 'true');
-        onAuth();
+        setSuccess(true);
+        setTimeout(() => {
+          sessionStorage.setItem('yedy_bible_auth', 'true');
+          onAuth();
+        }, 600);
       } else {
         setError(true);
         setShake(true);
@@ -272,52 +277,73 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
   };
 
   const handleDelete = () => {
+    if (success) return;
     setPassword(prev => prev.slice(0, -1));
     setError(false);
   };
 
   return (
-    <div className="min-h-screen bg-bg-secondary flex flex-col items-center justify-center p-6">
-      <div className={`w-full max-w-xs ${shake ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}>
-        <div className="text-center mb-10">
-          <div className="bg-accent-black w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
-            <Hexagon className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Hare's Bible</h1>
-          <p className="text-text-tertiary text-[10px] mt-2 uppercase tracking-widest font-bold">암호를 입력하세요</p>
+    <div className="min-h-screen flex flex-col items-center relative overflow-hidden" style={{ background: '#2c2f2c' }}>
+      {/* Header area */}
+      <div className="w-full pt-14 pb-4 px-8">
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] mb-5" style={{ color: 'rgba(255,255,255,0.25)' }}>Established 2025</p>
+        <div className="flex items-center gap-3">
+          <Hexagon className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.4)' }} />
+          <h1 className="text-[18px] font-medium uppercase tracking-[0.35em]" style={{ color: 'rgba(255,255,255,0.45)' }}>Hare's Bible</h1>
         </div>
+        <div className="mt-4 w-10 h-[2px]" style={{ background: 'rgba(255,255,255,0.15)' }} />
+      </div>
 
-        <div className="flex justify-center gap-4 mb-8">
+      {/* Center content */}
+      <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-[360px] px-6 ${shake ? 'pw-shake' : ''}`}>
+        {/* Access code label */}
+        <p className="text-[11px] font-medium uppercase tracking-[0.25em] mb-6" style={{ color: error ? '#c47070' : 'rgba(255,255,255,0.35)' }}>
+          {error ? '잘못된 암호입니다' : '암호를 입력하세요'}
+        </p>
+
+        {/* Dot indicators */}
+        <div className="flex justify-center gap-5 mb-14">
           {Array.from({ length: maxLen }).map((_, i) => (
-            <div key={i} className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
-              error ? 'bg-accent-red border-accent-red' :
-              i < password.length ? 'bg-accent-black border-accent-black scale-110' : 'border-border-medium bg-transparent'
-            }`} />
+            <div key={i} className={`w-[9px] h-[9px] rounded-full transition-all duration-300`} style={{
+              background: error ? '#c47070' :
+                success ? 'rgba(160,190,160,0.8)' :
+                i < password.length ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
+              transitionDelay: success ? `${i * 80}ms` : '0ms'
+            }} />
           ))}
         </div>
-        {error && <p className="text-accent-red text-[10px] font-black tracking-widest text-center mb-4">잘못된 암호입니다</p>}
 
-        <div className="grid grid-cols-3 gap-3">
+        {/* Number pad */}
+        <div className="grid grid-cols-3 w-full" style={{ rowGap: '6px' }}>
           {['1','2','3','4','5','6','7','8','9'].map(n => (
-            <button key={n} onClick={() => handleKey(n)} className="h-14 rounded-xl bg-bg-primary border border-border-light text-lg font-bold text-text-primary hover:bg-bg-paper active:scale-95 transition-all shadow-sm">
-              {n}
+            <button key={n} onClick={() => handleKey(n)} className="flex items-center justify-center h-[72px] active:opacity-40 transition-opacity duration-100" style={{ background: 'transparent', border: 'none' }}>
+              <span className="text-[36px] font-extralight" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'Pretendard', -apple-system, sans-serif" }}>{n}</span>
             </button>
           ))}
-          <div />
-          <button onClick={() => handleKey('0')} className="h-14 rounded-xl bg-bg-primary border border-border-light text-lg font-bold text-text-primary hover:bg-bg-paper active:scale-95 transition-all shadow-sm">
-            0
+          <div className="flex items-center justify-center h-[72px]" />
+          <button onClick={() => handleKey('0')} className="flex items-center justify-center h-[72px] active:opacity-40 transition-opacity duration-100" style={{ background: 'transparent', border: 'none' }}>
+            <span className="text-[36px] font-extralight" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'Pretendard', -apple-system, sans-serif" }}>0</span>
           </button>
-          <button onClick={handleDelete} className="h-14 rounded-xl bg-bg-primary border border-border-light text-text-tertiary hover:bg-bg-paper active:scale-95 transition-all shadow-sm flex items-center justify-center">
-            <X className="w-5 h-5" />
+          <button onClick={handleDelete} className="flex items-center justify-center h-[72px] active:opacity-40 transition-opacity duration-100" style={{ background: 'transparent', border: 'none' }}>
+            <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              <path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z" />
+              <line x1="18" y1="9" x2="12" y2="15" />
+              <line x1="12" y1="9" x2="18" y2="15" />
+            </svg>
           </button>
         </div>
       </div>
+
+      {/* Bottom spacer */}
+      <div className="pb-12" />
+
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          20%, 60% { transform: translateX(-8px); }
-          40%, 80% { transform: translateX(8px); }
+          15%, 55% { transform: translateX(-10px); }
+          35%, 75% { transform: translateX(10px); }
         }
+        .pw-shake { animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
       `}</style>
     </div>
   );
@@ -579,7 +605,7 @@ const Calendar: React.FC<{
       )}
 
       <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-text-tertiary mb-4 uppercase tracking-tighter">
-        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => <div key={d}>{d}</div>)}
+        {['일', '월', '화', '수', '목', '금', '토'].map(d => <div key={d}>{d}</div>)}
       </div>
       <div
         className="grid grid-cols-7 gap-2 touch-none"
@@ -599,10 +625,10 @@ const Calendar: React.FC<{
               key={idx}
               data-date={dateStr}
               onPointerUp={(e) => { if (e.pointerType === 'mouse') onToggleDate(dateStr); }}
-              className={`aspect-square flex flex-col items-center justify-center rounded-lg text-[10px] font-mono transition-all relative cursor-pointer select-none
+              className={`aspect-square flex flex-col items-center justify-center rounded-lg text-[11px] font-black transition-all relative cursor-pointer select-none
                 ${isSelectedDate ? 'ring-1 ring-accent-black ring-offset-2 z-10 scale-110' : ''}
-                ${status === 'success' ? 'bg-accent-blue text-white font-bold' :
-                  status === 'fail' ? 'bg-accent-red text-white font-bold' :
+                ${status === 'success' ? 'bg-accent-blue text-white' :
+                  status === 'fail' ? 'bg-accent-red text-white' :
                     'bg-bg-secondary text-text-secondary hover:border-border-dark hover:bg-bg-primary border border-transparent'}
                 ${isTodayDate && !status ? 'border-accent-black/30' : ''}
               `}
@@ -652,16 +678,16 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
   return (
     <div className="max-w-md mx-auto p-8 space-y-12 animate-in fade-in zoom-in-95 duration-500">
       <div className="text-center space-y-4">
-        <div className="bg-bg-paper w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-2 shadow-subtle border border-border-light sticker-card after:content-none before:left-1/2 before:-translate-x-1/2 before:w-12 before:top-[-10px]">
-          <BookOpen className="w-12 h-12 text-accent-blue" />
+        <div className="bg-bg-paper w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-subtle border border-border-light">
+          <BookOpen className="w-8 h-8 text-accent-blue" />
         </div>
-        <h2 className="text-3xl font-black text-text-primary serif-text uppercase tracking-tighter">{currentPlan ? "Archive Modification" : "Initialize Archive"}</h2>
-        <p className="text-text-tertiary text-[10px] font-black leading-relaxed px-6 uppercase tracking-widest">Define your spiritual research parameters and start date.</p>
+        <h2 className="text-xl font-black text-text-primary serif-text tracking-tighter">{currentPlan ? "통독 계획 수정" : "통독 계획 설정"}</h2>
+        <p className="text-text-tertiary text-[10px] font-black leading-relaxed px-6 uppercase tracking-widest">읽기 범위와 시작일을 설정하세요</p>
       </div>
 
       <div className="space-y-10">
         <div className="space-y-4">
-          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1 flex items-center gap-2"><CalendarDays className="w-3.5 h-3.5" /> MISSION COMMENCEMENT</h3>
+          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1 flex items-center gap-2"><CalendarDays className="w-3.5 h-3.5" /> 시작일</h3>
           <input
             type="date"
             value={startDate}
@@ -671,22 +697,22 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
         </div>
 
         <div className="space-y-5">
-          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1">OLD TESTAMENT PARAMETERS</h3>
+          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1">구약 설정</h3>
           <div className="grid grid-cols-2 gap-4">
             <select value={otBook} onChange={e => setOtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
               {(BIBLE_METADATA.OT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
             </select>
             <div className="relative">
               <input type="number" value={otStart} onChange={e => setOtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-text-tertiary uppercase tracking-tighter">START CH</span>
+              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[10px] text-text-tertiary font-black uppercase tracking-widest">CHAPTERS / DAY</span>
+            <span className="text-[10px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setOtPerDay(n)}
-                  className={`w-10 h-10 rounded-xl text-xs font-mono font-black transition-all ${otPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
+                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${otPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
                 >{n}</button>
               ))}
             </div>
@@ -694,22 +720,22 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
         </div>
 
         <div className="space-y-5">
-          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1">NEW TESTAMENT PARAMETERS</h3>
+          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1">신약 설정</h3>
           <div className="grid grid-cols-2 gap-4">
             <select value={ntBook} onChange={e => setNtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
               {(BIBLE_METADATA.NT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
             </select>
             <div className="relative">
               <input type="number" value={ntStart} onChange={e => setNtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-text-tertiary uppercase tracking-tighter">START CH</span>
+              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[10px] text-text-tertiary font-black uppercase tracking-widest">CHAPTERS / DAY</span>
+            <span className="text-[10px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setNtPerDay(n)}
-                  className={`w-10 h-10 rounded-xl text-xs font-mono font-black transition-all ${ntPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
+                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${ntPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
                 >{n}</button>
               ))}
             </div>
@@ -721,14 +747,14 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
             onClick={() => onSave({ otBook, otStartChapter: otStart, ntBook, ntStartChapter: ntStart, startDate: new Date(startDate).toISOString(), otChaptersPerDay: otPerDay, ntChaptersPerDay: ntPerDay, isPaused: false, pausedAt: null, totalPausedDays: currentPlan?.totalPausedDays || 0 })}
             className="btn-analogue w-full py-5 text-[10px] tracking-[0.2em] font-black bg-accent-black text-white"
           >
-            {currentPlan ? "UPDATE ARCHIVE" : "COMMENCE JOURNEY"}
+            {currentPlan ? "계획 수정" : "시작하기"}
           </button>
           {onCancel && (
             <button
               onClick={onCancel}
               className="w-full bg-transparent text-text-tertiary py-3.5 rounded-2xl font-black text-[10px] hover:text-accent-black transition-all uppercase tracking-widest"
             >
-              DISCARD CHANGES
+              취소
             </button>
           )}
         </div>
@@ -768,8 +794,8 @@ const BookmarkPanel: React.FC<{
     <div className="fixed inset-0 z-50 bg-bg-secondary overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
       <header className="bg-bg-primary border-b border-border-light p-6 sticky top-0 z-10 flex items-center justify-between shadow-subtle">
         <div>
-          <h3 className="text-xl font-black text-text-primary serif-text uppercase tracking-tighter">Personal Library</h3>
-          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Archived Wisdom & Terms</p>
+          <h3 className="text-xl font-black text-text-primary serif-text uppercase tracking-tighter">내 서재</h3>
+          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">저장한 구절 & 단어</p>
         </div>
         <button onClick={onClose} className="p-3 hover:bg-bg-secondary rounded-full transition-colors border border-border-light shadow-subtle"><X className="w-5 h-5" /></button>
       </header>
@@ -780,7 +806,7 @@ const BookmarkPanel: React.FC<{
           className={`flex-1 py-4 text-[10px] font-black text-center transition-all relative uppercase tracking-[0.2em] ${activeTab === 'bookmarks' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
         >
           <span className="inline-flex items-center gap-2">
-            <BookmarkCheck className="w-3.5 h-3.5" /> bookmarks
+            <BookmarkCheck className="w-3.5 h-3.5" /> 북마크
             <span className="text-[9px] font-black text-white bg-accent-black px-1.5 py-0.5 rounded-full">{bookmarks.length}</span>
           </span>
           {activeTab === 'bookmarks' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
@@ -790,7 +816,7 @@ const BookmarkPanel: React.FC<{
           className={`flex-1 py-4 text-[10px] font-black text-center transition-all relative uppercase tracking-[0.2em] ${activeTab === 'words' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
         >
           <span className="inline-flex items-center gap-2">
-            <Languages className="w-3.5 h-3.5" /> dictionary
+            <Languages className="w-3.5 h-3.5" /> 주요 단어
             <span className="text-[9px] font-black text-white bg-accent-black px-1.5 py-0.5 rounded-full">{totalWords}</span>
           </span>
           {activeTab === 'words' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
@@ -804,7 +830,7 @@ const BookmarkPanel: React.FC<{
               <div className="w-16 h-16 bg-bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 border border-border-light shadow-inner sticker-card">
                 <Bookmark className="w-8 h-8 text-text-tertiary opacity-30" />
               </div>
-              <p className="font-black text-xs text-text-tertiary uppercase tracking-widest leading-loose text-center">Library currently vacant.<br />Start archiving verses to see them here.</p>
+              <p className="font-black text-xs text-text-tertiary uppercase tracking-widest leading-loose text-center">아직 저장한 구절이 없습니다.<br />말씀을 읽고 구절을 저장해보세요.</p>
             </div>
           ) : (
             <div className="space-y-8">
@@ -844,7 +870,7 @@ const BookmarkPanel: React.FC<{
               <div className="w-16 h-16 bg-bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 border border-border-light shadow-inner sticker-card">
                 <Languages className="w-8 h-8 text-text-tertiary opacity-30" />
               </div>
-              <p className="font-black text-xs text-text-tertiary uppercase tracking-widest leading-loose text-center">Archives empty.<br />Add important terms from the text.</p>
+              <p className="font-black text-xs text-text-tertiary uppercase tracking-widest leading-loose text-center">저장한 단어가 없습니다.<br />본문에서 중요한 단어를 추가해보세요.</p>
             </div>
           ) : (
             <div className="space-y-8">
@@ -902,13 +928,13 @@ const MiniCalendar: React.FC<{
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div className="absolute inset-0 bg-black/20" />
-      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-72 bg-white rounded-2xl shadow-2xl border border-border-light p-4 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setViewDate(new Date(year, month - 1))} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronLeft className="w-4 h-4 text-gray-500" /></button>
-          <span className="text-sm font-bold text-gray-900">{year}년 {month + 1}월</span>
-          <button onClick={() => setViewDate(new Date(year, month + 1))} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><ChevronRight className="w-4 h-4 text-gray-500" /></button>
+          <button onClick={() => setViewDate(new Date(year, month - 1))} className="p-1.5 hover:bg-bg-secondary rounded-lg transition-colors"><ChevronLeft className="w-4 h-4 text-text-tertiary" /></button>
+          <span className="text-[11px] font-black text-text-primary uppercase tracking-widest">{year}년 {month + 1}월</span>
+          <button onClick={() => setViewDate(new Date(year, month + 1))} className="p-1.5 hover:bg-bg-secondary rounded-lg transition-colors"><ChevronRight className="w-4 h-4 text-text-tertiary" /></button>
         </div>
-        <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-bold text-gray-400 mb-1">
+        <div className="grid grid-cols-7 gap-0.5 text-center text-[9px] font-black text-text-tertiary mb-1 uppercase tracking-wider">
           {['일', '월', '화', '수', '목', '금', '토'].map(d => <div key={d}>{d}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
@@ -921,8 +947,8 @@ const MiniCalendar: React.FC<{
                   onSelectDate(new Date(year, month, day));
                   onClose();
                 }}
-                className={`aspect-square flex items-center justify-center rounded-lg text-xs font-semibold transition-all
-                  ${isSelected(day) ? 'bg-accent-black text-white font-bold' : isToday(day) ? 'bg-bg-paper text-accent-black font-bold' : 'text-text-secondary hover:bg-bg-secondary'}
+                className={`aspect-square flex items-center justify-center rounded-lg text-[11px] font-black transition-all
+                  ${isSelected(day) ? 'bg-accent-black text-white' : isToday(day) ? 'bg-bg-paper text-accent-black' : 'text-text-secondary hover:bg-bg-secondary'}
                 `}
               >
                 {day}
@@ -1111,27 +1137,32 @@ const ChatPanel: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-accent-black/40 backdrop-blur-sm flex flex-col items-center justify-end animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-bg-primary w-full max-w-2xl rounded-t-3xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom duration-300 shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="p-8 pb-4 border-b border-border-light">
-          <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-6" />
-          <div className="flex items-center gap-3">
-            <MessageSquare className="w-5 h-5 text-accent-blue" />
-            <h3 className="text-xl font-black text-text-primary serif-text tracking-tighter">Hare 챗봇</h3>
+    <div className="fixed inset-0 z-[70] flex flex-col items-center justify-end animate-in fade-in duration-200" onClick={onClose}>
+      <div className="absolute inset-0" style={{ background: 'rgba(26,26,26,0.6)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
+      <div className="relative w-full max-w-2xl rounded-t-3xl flex flex-col max-h-[88vh] animate-in slide-in-from-bottom duration-300" style={{ background: '#1e1f1e', boxShadow: '0 -20px 60px rgba(0,0,0,0.4)' }} onClick={e => e.stopPropagation()}>
+        <div className="p-6 pb-4">
+          <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-black tracking-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>Hare 챗봇</h3>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>오늘 읽은 말씀에 대해 질문하세요</p>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-2">오늘 읽은 말씀에 대해 자유롭게 질문하세요</p>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 paper-texture">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-bg-paper rounded-2xl flex items-center justify-center mx-auto mb-8 border border-border-light shadow-inner sticker-card after:content-none before:left-1/2 before:-translate-x-1/2 before:w-10 before:top-[-8px]">
-                <MessageSquare className="w-8 h-8 text-text-tertiary opacity-30" />
+            <div className="text-center py-16">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <MessageSquare className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.2)' }} />
               </div>
-              <p className="text-xs font-black text-text-tertiary tracking-widest mb-8">궁금한 것을 물어보세요</p>
-              <div className="grid grid-cols-1 gap-3">
+              <p className="text-[11px] font-bold mb-8" style={{ color: 'rgba(255,255,255,0.25)', letterSpacing: '0.15em' }}>궁금한 것을 물어보세요</p>
+              <div className="space-y-2">
                 {['이 본문의 역사적 배경은?', '핵심 신학적 메시지는?', '당시 시대적 상황은?'].map((q, i) => (
-                  <button key={i} onClick={() => setInput(q)} className="block w-full text-left text-[10px] font-black text-text-secondary bg-bg-primary border border-border-light hover:border-accent-black px-5 py-3 rounded-xl transition-all uppercase tracking-widest shadow-subtle">
+                  <button key={i} onClick={() => setInput(q)} className="block w-full text-left text-[11px] font-bold px-5 py-3.5 rounded-xl transition-all" style={{ color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     {q}
                   </button>
                 ))}
@@ -1140,34 +1171,36 @@ const ChatPanel: React.FC<{
           )}
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-6 py-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                ? 'bg-accent-black text-white font-bold rounded-br-sm shadow-card'
-                : 'bg-bg-paper text-text-primary font-medium rounded-bl-sm border border-border-light serif-text'
-                }`}>
+              <div className={`max-w-[85%] px-5 py-3.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'}`} style={msg.role === 'user' ? {
+                background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)', fontWeight: 600
+              } : {
+                background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.06)'
+              }}>
                 {msg.content}
               </div>
             </div>
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-bg-paper p-4 rounded-2xl rounded-bl-sm border border-border-light">
-                <Loader2 className="w-4 h-4 text-text-tertiary animate-spin" />
+              <div className="px-5 py-3.5 rounded-2xl rounded-bl-sm" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'rgba(255,255,255,0.3)' }} />
               </div>
             </div>
           )}
         </div>
 
-        <div className="p-6 border-t border-border-light bg-bg-secondary">
-          <div className="flex gap-3">
+        <div className="p-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex gap-2">
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
               placeholder="질문을 입력하세요..."
-              className="flex-1 bg-bg-primary border border-border-light rounded-xl px-5 py-4 text-sm font-bold outline-none focus:border-accent-black shadow-subtle"
+              className="flex-1 rounded-xl px-4 py-3.5 text-[13px] font-medium outline-none"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)' }}
               autoFocus
             />
-            <button onClick={handleSend} disabled={loading || !input.trim()} className="btn-analogue bg-accent-black text-white px-6">
+            <button onClick={handleSend} disabled={loading || !input.trim()} className="px-5 rounded-xl text-[11px] font-black transition-all" style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '전송'}
             </button>
           </div>
@@ -1242,8 +1275,12 @@ const App: React.FC = () => {
   const [streamingExegesis, setStreamingExegesis] = useState<{ range: string; version: string; items: ExegesisItem[]; done: boolean } | null>(null);
   const [fullBibleText, setFullBibleText] = useState<{ range: string; version: string; verses: BibleVerse[]; done: boolean } | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'reading'>('home');
+  const [showJournal, setShowJournal] = useState(false);
+  const [journalTab, setJournalTab] = useState<'meditation' | 'otNotes' | 'ntNotes'>('meditation');
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => { window.scrollTo(0, 0); }, [currentView]);
 
   useEffect(() => {
     const t = VINTAGE_THEMES[themeIdx] || VINTAGE_THEMES[0];
@@ -1278,15 +1315,30 @@ const App: React.FC = () => {
     });
   };
 
-  const [savedNotes, setSavedNotes] = useState<Record<string, { old?: string; new?: string }>>(() => {
+  const [savedNotes, setSavedNotes] = useState<Record<string, { old?: string; new?: string; oldRange?: string; newRange?: string }>>(() => {
     try { const s = localStorage.getItem('bible_saved_notes'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const handleSaveNote = (type: 'old' | 'new', note: string) => {
     const dateStr = selectedDate.toISOString().split('T')[0];
+    const rangeKey = type === 'old' ? 'oldRange' : 'newRange';
+    const cached = reflectionCacheRef.current[dateStr];
+    const range = type === 'old' ? cached?.old_testament?.range : cached?.new_testament?.range;
     setSavedNotes(prev => {
       const dayNotes = prev[dateStr] || {};
-      const next = { ...prev, [dateStr]: { ...dayNotes, [type]: note } };
+      const next = { ...prev, [dateStr]: { ...dayNotes, [type]: note, [rangeKey]: range || '' } };
       localStorage.setItem('bible_saved_notes', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const [savedMeditations, setSavedMeditations] = useState<Record<string, string>>(() => {
+    try { const s = localStorage.getItem('bible_saved_meditations'); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  const handleSaveMeditation = (text: string) => {
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    setSavedMeditations(prev => {
+      const next = { ...prev, [dateStr]: text };
+      localStorage.setItem('bible_saved_meditations', JSON.stringify(next));
       return next;
     });
   };
@@ -1621,28 +1673,46 @@ const App: React.FC = () => {
                   onSaveNote={(n) => handleSaveNote('new', n)}
                 />
               )}
-              <div className="rounded-xl p-10 shadow-card mb-16 sticker-card">
-                <div className="flex items-center gap-3 mb-6 text-text-tertiary">
-                  <MessageCircle className="w-5 h-5" />
-                  <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">DAILY JOURNAL ENTRY</h3>
-                </div>
-                <p className="text-text-primary font-bold text-lg mb-8 leading-relaxed" style={{ fontSize: `${fontSize}px` }}>{reflection.meditation_question}</p>
-                <button
-                  onClick={async () => {
-                    setAiState(prev => ({ ...prev, loading: true }));
-                    const context = `구약: ${reflection.old_testament?.summary}, 신약: ${reflection.new_testament?.summary}`;
-                    const result = await getDeepReflection(reflection.meditation_question, context);
-                    setAiState(prev => ({ ...prev, loading: false, reflectionResponse: result }));
-                  }}
-                  className="w-full bg-white text-accent-black py-5 rounded-full font-black text-[10px] hover:bg-bg-paper transition-all shadow-subtle uppercase tracking-[0.2em]"
-                >
-                  EXPAND DEEP ARCHIVE
-                </button>
-                {aiState.reflectionResponse && (
-                  <div className="mt-8 bg-bg-paper p-8 rounded-xl text-text-secondary leading-relaxed whitespace-pre-wrap font-medium border border-border-light serif-text" style={{ fontSize: `${fontSize}px` }}>
-                    {aiState.reflectionResponse}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
+                <div className="rounded-xl p-8 shadow-card sticker-card">
+                  <div className="flex items-center gap-3 mb-5 text-text-tertiary">
+                    <MessageCircle className="w-4 h-4" />
+                    <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">오늘의 묵상</h3>
                   </div>
-                )}
+                  <p className="text-text-primary font-bold leading-relaxed mb-6 serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{reflection.meditation_question}</p>
+                  <textarea
+                    value={savedMeditations[selectedDate.toISOString().split('T')[0]] || ''}
+                    onChange={e => handleSaveMeditation(e.target.value)}
+                    placeholder="묵상 질문에 대한 나의 생각을 적어보세요..."
+                    className="w-full bg-bg-paper border border-border-light rounded-xl p-4 text-text-secondary leading-relaxed resize-none focus:border-accent-blue focus:outline-none transition-colors serif-text"
+                    rows={4}
+                    style={{ fontSize: `${fontSize - 2}px` }}
+                  />
+                  <button
+                    onClick={() => setShowJournal(true)}
+                    className="mt-3 w-full bg-accent-black text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all hover:opacity-90"
+                  >
+                    묵상 일지 보기
+                  </button>
+                </div>
+                <div className="rounded-xl p-8 shadow-card sticker-card">
+                  <div className="flex items-center gap-3 mb-5 text-text-tertiary">
+                    <Heart className="w-4 h-4" />
+                    <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">오늘의 기도제목</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {reflection.prayer_topics && reflection.prayer_topics.length > 0 ? (
+                      reflection.prayer_topics.map((topic: string, i: number) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <span className="text-accent-blue font-black text-xs mt-0.5 shrink-0">{i + 1}</span>
+                          <p className="text-text-secondary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{topic}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-text-tertiary text-xs">기도제목을 불러오는 중...</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ) : null}
@@ -1657,6 +1727,243 @@ const App: React.FC = () => {
         </main>
       )}
 
+      {showJournal && (
+        <div className="fixed inset-0 z-50 bg-bg-secondary overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
+        <header className="bg-bg-primary border-b border-border-light sticky top-0 z-10 shadow-subtle">
+          <div className="flex items-center justify-between p-6 pb-4">
+            <div>
+              <h2 className="text-xl font-black text-text-primary tracking-tighter serif-text">묵상 일지</h2>
+              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mt-1">나의 말씀 묵상 기록</p>
+            </div>
+            <button onClick={() => setShowJournal(false)} className="p-3 hover:bg-bg-secondary rounded-full transition-colors border border-border-light shadow-subtle"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="flex gap-2 px-6 pb-4">
+            {([['meditation', '묵상'], ['otNotes', '구약 노트'], ['ntNotes', '신약 노트']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setJournalTab(key)}
+                className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                  journalTab === key
+                    ? 'bg-accent-black text-white'
+                    : 'bg-bg-primary border border-border-light text-text-tertiary hover:border-accent-black hover:text-text-primary'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          {/* Meditation tab */}
+          {journalTab === 'meditation' && (() => {
+            const entries = (Object.entries(savedMeditations) as [string, string][])
+              .filter(([, text]) => text.trim())
+              .sort(([a], [b]) => b.localeCompare(a));
+            if (entries.length === 0) return (
+              <div className="py-24 text-center">
+                <PenLine className="w-10 h-10 text-text-tertiary opacity-20 mx-auto mb-6" />
+                <p className="text-xs font-black text-text-tertiary uppercase tracking-widest leading-loose">아직 작성한 묵상이 없습니다.<br/>읽기 탭에서 묵상을 작성해보세요.</p>
+              </div>
+            );
+            return (
+              <div className="space-y-4">
+                {entries.map(([dateStr, text]) => {
+                  const d = new Date(dateStr + 'T00:00:00');
+                  const cached = reflectionCacheRef.current[dateStr];
+                  let lpTimer: ReturnType<typeof setTimeout> | null = null;
+                  const goToDate = () => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); };
+                  return (
+                    <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-6 shadow-subtle">
+                      <div className="flex items-center justify-between mb-3">
+                        <span
+                          className="text-[10px] font-black text-text-tertiary uppercase tracking-widest cursor-pointer select-none"
+                          onTouchStart={() => { lpTimer = setTimeout(goToDate, 800); }}
+                          onTouchEnd={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                          onTouchMove={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                          onMouseDown={() => { lpTimer = setTimeout(goToDate, 800); }}
+                          onMouseUp={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                          onMouseLeave={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                          title="꾹 눌러서 해당 날짜로 이동"
+                        >
+                          {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                        <button onClick={() => {
+                          setSavedMeditations(prev => {
+                            const next = { ...prev };
+                            delete next[dateStr];
+                            localStorage.setItem('bible_saved_meditations', JSON.stringify(next));
+                            return next;
+                          });
+                        }} className="text-text-tertiary hover:text-accent-red transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {cached?.meditation_question && (
+                        <p className="text-[11px] text-accent-blue font-bold mb-3 leading-relaxed">Q. {cached.meditation_question}</p>
+                      )}
+                      <p className="text-text-primary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* OT Notes tab */}
+          {journalTab === 'otNotes' && (() => {
+            type NoteEntry = { old?: string; new?: string; oldRange?: string; newRange?: string };
+            const entries = (Object.entries(savedNotes) as [string, NoteEntry][])
+              .filter(([, n]) => n.old?.trim())
+              .sort(([a], [b]) => b.localeCompare(a));
+            if (entries.length === 0) return (
+              <div className="py-24 text-center">
+                <BookText className="w-10 h-10 text-text-tertiary opacity-20 mx-auto mb-6" />
+                <p className="text-xs font-black text-text-tertiary uppercase tracking-widest leading-loose">아직 작성한 구약 노트가 없습니다.<br/>읽기 탭에서 노트를 작성해보세요.</p>
+              </div>
+            );
+            // Group by range (book)
+            const grouped: Record<string, Array<{ dateStr: string; note: string; range: string }>> = {};
+            entries.forEach(([dateStr, n]) => {
+              const range = n.oldRange || '범위 미지정';
+              const bookName = range.split(/\d/)[0].trim() || range;
+              if (!grouped[bookName]) grouped[bookName] = [];
+              grouped[bookName].push({ dateStr, note: n.old!, range });
+            });
+            return (
+              <div className="space-y-6">
+                {Object.entries(grouped).map(([bookName, items]) => (
+                  <div key={bookName}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="badge-archival bg-accent-blue">{bookName}</span>
+                      <span className="text-[10px] text-text-tertiary">{items.length}개 노트</span>
+                    </div>
+                    <div className="space-y-3">
+                      {items.map(({ dateStr, note, range }) => {
+                        const d = new Date(dateStr + 'T00:00:00');
+                        let lpTimer: ReturnType<typeof setTimeout> | null = null;
+                        const goToDate = () => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); };
+                        return (
+                          <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-5 shadow-subtle">
+                            <div className="flex items-center justify-between mb-2">
+                              <div
+                                className="flex items-center gap-2 cursor-pointer select-none"
+                                onTouchStart={() => { lpTimer = setTimeout(goToDate, 800); }}
+                                onTouchEnd={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                onTouchMove={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                onMouseDown={() => { lpTimer = setTimeout(goToDate, 800); }}
+                                onMouseUp={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                onMouseLeave={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                title="꾹 눌러서 해당 날짜로 이동"
+                              >
+                                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
+                                  {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </span>
+                                {range && <span className="text-[10px] text-accent-blue font-bold">{range}</span>}
+                              </div>
+                              <button onClick={() => {
+                                setSavedNotes(prev => {
+                                  const dayNotes = { ...prev[dateStr] };
+                                  delete dayNotes.old;
+                                  delete dayNotes.oldRange;
+                                  const next = { ...prev, [dateStr]: dayNotes };
+                                  if (!dayNotes.new) delete next[dateStr];
+                                  localStorage.setItem('bible_saved_notes', JSON.stringify(next));
+                                  return next;
+                                });
+                              }} className="text-text-tertiary hover:text-accent-red transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <p className="text-text-primary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{note}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* NT Notes tab */}
+          {journalTab === 'ntNotes' && (() => {
+            type NoteEntry = { old?: string; new?: string; oldRange?: string; newRange?: string };
+            const entries = (Object.entries(savedNotes) as [string, NoteEntry][])
+              .filter(([, n]) => n.new?.trim())
+              .sort(([a], [b]) => b.localeCompare(a));
+            if (entries.length === 0) return (
+              <div className="py-24 text-center">
+                <BookText className="w-10 h-10 text-text-tertiary opacity-20 mx-auto mb-6" />
+                <p className="text-xs font-black text-text-tertiary uppercase tracking-widest leading-loose">아직 작성한 신약 노트가 없습니다.<br/>읽기 탭에서 노트를 작성해보세요.</p>
+              </div>
+            );
+            const grouped: Record<string, Array<{ dateStr: string; note: string; range: string }>> = {};
+            entries.forEach(([dateStr, n]) => {
+              const range = n.newRange || '범위 미지정';
+              const bookName = range.split(/\d/)[0].trim() || range;
+              if (!grouped[bookName]) grouped[bookName] = [];
+              grouped[bookName].push({ dateStr, note: n.new!, range });
+            });
+            return (
+              <div className="space-y-6">
+                {Object.entries(grouped).map(([bookName, items]) => (
+                  <div key={bookName}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="badge-archival bg-accent-green">{bookName}</span>
+                      <span className="text-[10px] text-text-tertiary">{items.length}개 노트</span>
+                    </div>
+                    <div className="space-y-3">
+                      {items.map(({ dateStr, note, range }) => {
+                        const d = new Date(dateStr + 'T00:00:00');
+                        let lpTimer: ReturnType<typeof setTimeout> | null = null;
+                        const goToDate = () => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); };
+                        return (
+                          <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-5 shadow-subtle">
+                            <div className="flex items-center justify-between mb-2">
+                              <div
+                                className="flex items-center gap-2 cursor-pointer select-none"
+                                onTouchStart={() => { lpTimer = setTimeout(goToDate, 800); }}
+                                onTouchEnd={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                onTouchMove={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                onMouseDown={() => { lpTimer = setTimeout(goToDate, 800); }}
+                                onMouseUp={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                onMouseLeave={() => { if (lpTimer) clearTimeout(lpTimer); }}
+                                title="꾹 눌러서 해당 날짜로 이동"
+                              >
+                                <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
+                                  {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </span>
+                                {range && <span className="text-[10px] text-accent-green font-bold">{range}</span>}
+                              </div>
+                              <button onClick={() => {
+                                setSavedNotes(prev => {
+                                  const dayNotes = { ...prev[dateStr] };
+                                  delete dayNotes.new;
+                                  delete dayNotes.newRange;
+                                  const next = { ...prev, [dateStr]: dayNotes };
+                                  if (!dayNotes.old) delete next[dateStr];
+                                  localStorage.setItem('bible_saved_notes', JSON.stringify(next));
+                                  return next;
+                                });
+                              }} className="text-text-tertiary hover:text-accent-red transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <p className="text-text-primary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{note}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+        </div>
+      )}
+
       {/* Bottom navigation */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-bg-primary border-t border-border-light z-40">
         <div className="flex">
@@ -1665,14 +1972,21 @@ const App: React.FC = () => {
             className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'home' ? 'text-accent-black' : 'text-text-tertiary'}`}
           >
             <Home className="w-5 h-5" />
-            <span className="text-[10px] font-bold">홈</span>
+            <span className="text-[10px] font-black">홈</span>
           </button>
           <button
             onClick={() => setCurrentView('reading')}
             className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${currentView === 'reading' ? 'text-accent-black' : 'text-text-tertiary'}`}
           >
             <BookOpen className="w-5 h-5" />
-            <span className="text-[10px] font-bold">읽기</span>
+            <span className="text-[10px] font-black">읽기</span>
+          </button>
+          <button
+            onClick={() => setShowJournal(true)}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${showJournal ? 'text-accent-black' : 'text-text-tertiary'}`}
+          >
+            <PenLine className="w-5 h-5" />
+            <span className="text-[10px] font-black">묵상</span>
           </button>
         </div>
       </div>
@@ -1768,6 +2082,7 @@ const StudySection: React.FC<{
   const [ttsLoading, setTtsLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showBackground, setShowBackground] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [showFigures, setShowFigures] = useState(false);
   const [showVocabulary, setShowVocabulary] = useState(false);
   const [showNote, setShowNote] = useState(false);
@@ -1808,7 +2123,7 @@ const StudySection: React.FC<{
         </div>
       </div>
 
-      <h2 className="text-4xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline justify-between">
+      <h2 className="text-2xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline justify-between">
         {section.range}
         <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest px-2 py-0.5">Easy Bible</span>
       </h2>
@@ -1818,20 +2133,28 @@ const StudySection: React.FC<{
           <div className="bg-bg-secondary rounded-xl border border-border-light overflow-hidden shadow-subtle">
             <button onClick={() => setShowBackground(!showBackground)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-paper">
               <Info className={`w-4 h-4 text-accent-blue shrink-0`} />
-              <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">Historical Context</h4>
+              <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">역사적 배경</h4>
               <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showBackground ? 'rotate-180' : ''}`} />
             </button>
             {showBackground && (
               <div className="px-6 pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                <p className="text-text-secondary leading-loose font-medium serif-text italic" style={{ fontSize: `${fontSize}px` }}>{section.background}</p>
+                <p className="text-text-secondary leading-loose serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{section.background}</p>
               </div>
             )}
           </div>
         )}
 
-        <div className={`bg-bg-paper rounded-xl p-8 border border-border-light shadow-card sticker-card before:left-1/2 before:-translate-x-1/2 before:w-12 before:top-[-10px]`}>
-          <h4 className={`text-[9px] font-black text-accent-blue uppercase tracking-[0.3em] mb-4`}>Core Summary</h4>
-          <p className="text-text-primary leading-loose font-black serif-text" style={{ fontSize: `${fontSize + 2}px` }}>{section.summary}</p>
+        <div className={`bg-bg-paper rounded-xl border border-border-light shadow-card overflow-hidden`}>
+          <button onClick={() => setShowSummary(!showSummary)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-secondary">
+            <BookText className={`w-4 h-4 text-accent-blue shrink-0`} />
+            <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">핵심 요약</h4>
+            <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showSummary ? 'rotate-180' : ''}`} />
+          </button>
+          {showSummary && (
+            <div className="px-6 pb-6 pt-0 animate-in fade-in duration-300">
+              <p className="text-text-primary leading-loose serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{section.summary}</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1839,7 +2162,7 @@ const StudySection: React.FC<{
             <div className="bg-bg-primary border border-border-light rounded-xl overflow-hidden shadow-subtle">
               <button onClick={() => setShowFigures(!showFigures)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-secondary">
                 <Users className={`w-4 h-4 text-accent-green shrink-0`} />
-                <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">Key Personnel</h4>
+                <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">주요 인물</h4>
                 <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showFigures ? 'rotate-180' : ''}`} />
               </button>
               {showFigures && (
@@ -1859,7 +2182,7 @@ const StudySection: React.FC<{
             <div className="bg-bg-primary border border-border-light rounded-xl overflow-hidden shadow-subtle">
               <button onClick={() => setShowVocabulary(!showVocabulary)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-secondary">
                 <Languages className={`w-4 h-4 text-accent-yellow shrink-0`} />
-                <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">Terms & Dictionary</h4>
+                <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">용어 사전</h4>
                 <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showVocabulary ? 'rotate-180' : ''}`} />
               </button>
               {showVocabulary && (
@@ -1877,40 +2200,39 @@ const StudySection: React.FC<{
         </div>
       </div>
 
-      <div className="flex gap-4 mt-10">
-        <button onClick={onExegesis} className="flex-1 btn-analogue bg-accent-black text-white py-4 shadow-card text-[10px]">
-          <BookText className="w-4 h-4" /> 구절별 해설 보기
+      <div className="flex gap-3 mt-10">
+        <button onClick={onExegesis} className="flex-1 btn-analogue bg-accent-black text-white py-3 shadow-card text-[9px]">
+          <BookText className="w-3.5 h-3.5" /> 해설 보기
         </button>
-        <button onClick={() => setShowNote(true)} className={`p-5 rounded-full border transition-all shadow-subtle ${note ? `bg-bg-paper border-accent-blue text-accent-blue` : 'bg-bg-primary border-border-light text-text-tertiary hover:border-accent-black hover:text-accent-black'}`}>
-          <PenLine className="w-5 h-5" />
+        <button onClick={() => setShowNote(true)} className={`flex-1 btn-analogue py-3 shadow-card text-[9px] ${note ? 'bg-bg-paper border-accent-blue text-accent-blue' : 'bg-bg-primary border-border-light text-text-tertiary hover:border-accent-black hover:text-accent-black'}`}>
+          <PenLine className="w-3.5 h-3.5" /> {note ? '노트 수정' : '노트 작성'}
         </button>
       </div>
 
       {showNote && (
         <div className="fixed inset-0 z-[70] bg-accent-black/40 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200" onClick={() => setShowNote(false)}>
-          <div className="bg-bg-primary w-full max-w-2xl rounded-t-3xl p-8 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-8" />
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <PenLine className={`w-5 h-5 text-accent-blue`} />
-                <h3 className="text-xl font-black text-text-primary serif-text uppercase tracking-tighter">Researcher's Log</h3>
-                <span className={`badge-archival bg-bg-paper text-text-tertiary border border-border-light`}>{section.range}</span>
+          <div className="bg-bg-primary w-full max-w-2xl rounded-t-3xl p-6 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-border-light rounded-full mx-auto mb-5" />
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-base font-black text-text-primary tracking-tight">말씀 노트</h3>
+                <p className="text-[9px] font-black text-text-tertiary uppercase tracking-widest mt-0.5">{section.range}</p>
               </div>
-              <button onClick={() => setShowNote(false)} className="p-2 hover:bg-bg-secondary rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowNote(false)} className="p-2 hover:bg-bg-secondary rounded-full transition-colors"><X className="w-4 h-4 text-text-tertiary" /></button>
             </div>
             <textarea
               value={noteText}
               onChange={e => setNoteText(e.target.value)}
-              placeholder="Record your spiritual reflections and applications here..."
-              className="flex-1 min-h-[250px] bg-bg-primary border border-border-light rounded-xl p-6 text-sm font-bold text-text-primary leading-loose outline-none focus:border-accent-black shadow-inner serif-text italic"
-              style={{ fontSize: `${fontSize}px` }}
+              placeholder="말씀을 통해 깨달은 점과 적용할 점을 적어보세요..."
+              className="flex-1 min-h-[200px] bg-bg-paper border border-border-light rounded-xl p-5 text-text-primary leading-relaxed outline-none focus:border-accent-blue transition-colors"
+              style={{ fontSize: `${fontSize - 1}px` }}
               autoFocus
             />
             <button
               onClick={() => { onSaveNote(noteText); setShowNote(false); }}
-              className={`w-full mt-6 btn-analogue bg-accent-black text-white py-5`}
+              className="w-full mt-4 bg-accent-black text-white py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-all"
             >
-              SAVE TO ARCHIVE
+              저장
             </button>
           </div>
         </div>
@@ -1938,6 +2260,217 @@ const ExegesisOverlay: React.FC<{
   const [tappedWords, setTappedWords] = useState<Array<{ word: string; meaning: string | null; loading: boolean }>>([]);
   const [pendingWord, setPendingWord] = useState<{ word: string; verseText: string } | null>(null);
   const [pendingRemoveWord, setPendingRemoveWord] = useState<string | null>(null);
+  const [hoveredVerse, setHoveredVerse] = useState<number | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Highlight & memo state for exegesis
+  type Highlight = { id: string; start: number; end: number; note: string };
+  const [highlights, setHighlights] = useState<Record<string, Highlight[]>>(() => {
+    try { const s = localStorage.getItem('bible_highlights'); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  // Pending selection: user dragged text, waiting for action choice
+  const [pendingSelect, setPendingSelect] = useState<{ cardKey: string; start: number; end: number; text: string } | null>(null);
+  // Action menu on existing highlight
+  const [hlAction, setHlAction] = useState<{ cardKey: string; hlId: string } | null>(null);
+  // Memo editing on existing highlight
+  const [hlEditing, setHlEditing] = useState<{ cardKey: string; hlId: string } | null>(null);
+  const [memoText, setMemoText] = useState('');
+  const memoInputRef = useRef<HTMLInputElement>(null);
+
+  const saveHighlights = (next: Record<string, Highlight[]>) => {
+    setHighlights(next);
+    localStorage.setItem('bible_highlights', JSON.stringify(next));
+  };
+
+  const dismissAll = () => { setPendingSelect(null); setHlAction(null); setHlEditing(null); setMemoText(''); };
+
+  // Step 1: User selects text → show pending action bar
+  const handleTextSelect = (cardKey: string, explanation: string) => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const container = range.startContainer.parentElement?.closest('[data-highlightable]');
+    if (!container) return;
+    const selectedText = sel.toString().trim();
+    if (!selectedText || selectedText.length < 2) return;
+    const startIdx = explanation.indexOf(selectedText);
+    if (startIdx === -1) return;
+    const endIdx = startIdx + selectedText.length;
+    const existing = highlights[cardKey] || [];
+    const overlaps = existing.some(h => !(endIdx <= h.start || startIdx >= h.end));
+    if (overlaps) { sel.removeAllRanges(); return; }
+    dismissAll();
+    setPendingSelect({ cardKey, start: startIdx, end: endIdx, text: selectedText });
+    sel.removeAllRanges();
+  };
+
+  // Step 2a: Create underline only
+  const confirmUnderline = () => {
+    if (!pendingSelect) return;
+    const { cardKey, start, end } = pendingSelect;
+    const newHl: Highlight = { id: Date.now().toString(), start, end, note: '' };
+    saveHighlights({ ...highlights, [cardKey]: [...(highlights[cardKey] || []), newHl] });
+    setPendingSelect(null);
+  };
+
+  // Step 2b: Create underline + open memo
+  const confirmUnderlineWithMemo = () => {
+    if (!pendingSelect) return;
+    const { cardKey, start, end } = pendingSelect;
+    const id = Date.now().toString();
+    const newHl: Highlight = { id, start, end, note: '' };
+    saveHighlights({ ...highlights, [cardKey]: [...(highlights[cardKey] || []), newHl] });
+    setPendingSelect(null);
+    setMemoText('');
+    setHlEditing({ cardKey, hlId: id });
+    setTimeout(() => memoInputRef.current?.focus(), 100);
+  };
+
+  // Existing highlight click → action menu
+  const handleHighlightClick = (cardKey: string, hlId: string) => {
+    setPendingSelect(null);
+    setHlEditing(null);
+    setHlAction(prev => prev?.hlId === hlId ? null : { cardKey, hlId });
+  };
+
+  const startMemoEdit = (cardKey: string, hlId: string) => {
+    const hl = (highlights[cardKey] || []).find(h => h.id === hlId);
+    setMemoText(hl?.note || '');
+    setHlAction(null);
+    setHlEditing({ cardKey, hlId });
+    setTimeout(() => memoInputRef.current?.focus(), 100);
+  };
+
+  const saveMemo = () => {
+    if (!hlEditing) return;
+    const { cardKey, hlId } = hlEditing;
+    const existing = highlights[cardKey] || [];
+    saveHighlights({ ...highlights, [cardKey]: existing.map(h => h.id === hlId ? { ...h, note: memoText } : h) });
+    setHlEditing(null);
+    setMemoText('');
+  };
+
+  const removeHighlight = (cardKey: string, hlId: string) => {
+    const existing = highlights[cardKey] || [];
+    saveHighlights({ ...highlights, [cardKey]: existing.filter(h => h.id !== hlId) });
+    setHlAction(null);
+    setHlEditing(null);
+  };
+
+  const renderHighlightedText = (text: string, cardKey: string, wordTapVerse?: string) => {
+    const hls = (highlights[cardKey] || []).slice().sort((a, b) => a.start - b.start);
+    const pending = pendingSelect?.cardKey === cardKey ? pendingSelect : null;
+
+    // Helper: render plain text with optional word-tap feature
+    const pushPlainWords = (str: string, keyBase: string, arr: React.ReactNode[]) => {
+      if (!wordTapVerse) { arr.push(<span key={keyBase}>{str}</span>); return; }
+      str.split(/(\s+)/).forEach((seg, i) => {
+        if (/^\s+$/.test(seg)) { arr.push(<span key={`${keyBase}-${i}`}>{seg}</span>); return; }
+        const cleaned = seg.replace(/^[^\uAC00-\uD7A3a-zA-Z0-9]+|[^\uAC00-\uD7A3a-zA-Z0-9]+$/g, '');
+        const noun = extractNoun(cleaned);
+        const isTapped = tappedWords.some(w => w.word === noun);
+        arr.push(
+          <span key={`${keyBase}-${i}`} onClick={() => handleWordTap(seg, wordTapVerse!)}
+            className={`cursor-pointer transition-all rounded px-0.5 border-b-2 decoration-accent-blue/20 hover:bg-accent-blue/5 ${isTapped ? 'bg-bg-paper text-accent-blue border-accent-blue' : 'border-transparent'}`}
+          >{seg}</span>
+        );
+      });
+    };
+
+    if (hls.length === 0 && !pending) {
+      if (wordTapVerse) { const p: React.ReactNode[] = []; pushPlainWords(text, 'all', p); return <>{p}</>; }
+      return <span>{text}</span>;
+    }
+    const parts: React.ReactNode[] = [];
+    let cursor = 0;
+
+    type Segment = { type: 'hl'; hl: Highlight } | { type: 'pending'; start: number; end: number };
+    const segments: Segment[] = hls.map(hl => ({ type: 'hl' as const, hl }));
+    if (pending) segments.push({ type: 'pending', start: pending.start, end: pending.end });
+    segments.sort((a, b) => (a.type === 'hl' ? a.hl.start : a.start) - (b.type === 'hl' ? b.hl.start : b.start));
+
+    segments.forEach(seg => {
+      const segStart = seg.type === 'hl' ? seg.hl.start : seg.start;
+      const segEnd = seg.type === 'hl' ? seg.hl.end : seg.end;
+      if (cursor < segStart) pushPlainWords(text.slice(cursor, segStart), `t-${cursor}`, parts);
+
+      if (seg.type === 'pending') {
+        parts.push(
+          <span key="pending" className="relative inline">
+            <span style={{ borderBottom: '2px dashed var(--color-accent-blue)', background: 'rgba(59,130,246,0.06)', paddingBottom: '1px' }}>
+              {text.slice(segStart, segEnd)}
+            </span>
+            <span className="absolute left-0 top-full mt-1 z-30 animate-in fade-in duration-150">
+              <span className="inline-flex items-center gap-0 bg-bg-primary border border-border-light shadow-md rounded-md overflow-hidden whitespace-nowrap">
+                <button onClick={(e) => { e.stopPropagation(); confirmUnderline(); }} className="px-3 py-1.5 text-[9px] font-black text-text-primary hover:bg-bg-secondary transition-colors border-r border-border-light">밑줄</button>
+                <button onClick={(e) => { e.stopPropagation(); confirmUnderlineWithMemo(); }} className="px-3 py-1.5 text-[9px] font-black text-accent-blue hover:bg-bg-secondary transition-colors border-r border-border-light">밑줄+말풍선</button>
+                <button onClick={(e) => { e.stopPropagation(); setPendingSelect(null); }} className="px-3 py-1.5 text-[9px] font-black text-text-tertiary hover:bg-bg-secondary transition-colors">취소</button>
+              </span>
+            </span>
+          </span>
+        );
+      } else {
+        const hl = seg.hl;
+        const isActionTarget = hlAction?.hlId === hl.id;
+        const isEditTarget = hlEditing?.hlId === hl.id;
+        const hasSavedMemo = hl.note && !isEditTarget && !isActionTarget;
+        parts.push(
+          <span key={hl.id} className={`relative ${hasSavedMemo ? 'inline-block align-top' : 'inline'}`}>
+            <span
+              onClick={(e) => { e.stopPropagation(); handleHighlightClick(cardKey, hl.id); }}
+              className="cursor-pointer transition-colors"
+              style={{ borderBottom: '2px solid var(--color-accent-blue)', background: 'rgba(59,130,246,0.08)', paddingBottom: '1px' }}
+            >
+              {text.slice(segStart, segEnd)}
+            </span>
+            {/* Saved memo bubble — block layout, pushes content down */}
+            {hasSavedMemo && (
+              <span
+                onClick={(e) => { e.stopPropagation(); handleHighlightClick(cardKey, hl.id); }}
+                className="block relative mt-1 z-20 cursor-pointer rounded-lg px-3 py-1.5 text-[11px] leading-relaxed whitespace-nowrap animate-in fade-in duration-200"
+                style={{ background: 'rgba(74,93,116,0.07)', border: '1px solid rgba(74,93,116,0.15)', color: 'var(--color-accent-blue)' }}
+              >
+                <span className="absolute -top-[6px] left-3 w-3 h-3 rotate-45" style={{ background: 'rgba(74,93,116,0.07)', borderLeft: '1px solid rgba(74,93,116,0.15)', borderTop: '1px solid rgba(74,93,116,0.15)' }} />
+                <span className="relative z-10">{hl.note}</span>
+              </span>
+            )}
+            {/* Action menu — absolute (temporary) */}
+            {isActionTarget && (
+              <span className="absolute left-0 top-full mt-1 z-30 animate-in fade-in duration-150">
+                <span className="inline-flex items-center gap-0 bg-bg-primary border border-border-light shadow-md rounded-md overflow-hidden whitespace-nowrap">
+                  <button onClick={(e) => { e.stopPropagation(); startMemoEdit(cardKey, hl.id); }} className="px-3 py-1.5 text-[9px] font-black text-accent-blue hover:bg-bg-secondary transition-colors border-r border-border-light">말풍선 {hl.note ? '수정' : '추가'}</button>
+                  <button onClick={(e) => { e.stopPropagation(); removeHighlight(cardKey, hl.id); }} className="px-3 py-1.5 text-[9px] font-black text-accent-red hover:bg-bg-secondary transition-colors">밑줄 취소</button>
+                </span>
+              </span>
+            )}
+            {/* Memo input — absolute (temporary) */}
+            {isEditTarget && (
+              <span className="absolute left-0 top-full mt-1 z-30 w-64 animate-in fade-in duration-150">
+                <span className="block bg-bg-primary border border-accent-blue/30 shadow-lg rounded-lg p-2.5">
+                  <span className="absolute -top-[6px] left-3 w-3 h-3 rotate-45 bg-bg-primary" style={{ borderLeft: '1px solid rgba(74,93,116,0.3)', borderTop: '1px solid rgba(74,93,116,0.3)' }} />
+                  <input
+                    ref={memoInputRef}
+                    value={memoText}
+                    onChange={e => setMemoText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveMemo(); if (e.key === 'Escape') { setHlEditing(null); setMemoText(''); } }}
+                    placeholder="메모를 입력하세요..."
+                    className="relative z-10 w-full bg-bg-paper border border-border-light rounded-md px-2.5 py-2 text-xs text-text-primary outline-none focus:border-accent-blue transition-colors"
+                  />
+                  <span className="relative z-10 flex gap-1.5 mt-2">
+                    <button onClick={() => { setHlEditing(null); setMemoText(''); }} className="flex-1 py-1.5 text-[9px] font-black text-text-tertiary rounded-md border border-border-light hover:bg-bg-secondary transition-colors">취소</button>
+                    <button onClick={saveMemo} className="flex-1 py-1.5 text-[9px] font-black text-white bg-accent-black rounded-md hover:opacity-90 transition-all">저장</button>
+                  </span>
+                </span>
+              </span>
+            )}
+          </span>
+        );
+      }
+      cursor = segEnd;
+    });
+    if (cursor < text.length) pushPlainWords(text.slice(cursor), `t-${cursor}`, parts);
+    return <>{parts}</>;
+  };
 
   const extractNoun = (w: string): string => {
     const particles = ['에게서', '으로서', '으로써', '로부터', '에서는', '에게는', '한테서', '까지는', '부터는', '이라고', '이라는', '에서', '에게', '한테', '으로', '까지', '부터', '마저', '조차', '밖에', '처럼', '만큼', '대로', '께서', '로서', '로써', '과는', '와는', '이는', '에는', '들을', '들이', '들은', '은', '는', '이', '가', '을', '를', '의', '에', '도', '만', '와', '과', '로', '께', '서', '들'];
@@ -1997,10 +2530,10 @@ const ExegesisOverlay: React.FC<{
         <div>
           <h3 className="text-2xl font-black text-text-primary serif-text uppercase tracking-tighter">{data.range}</h3>
           <div className="flex items-center gap-2 mt-1">
-            <span className="badge-archival bg-accent-blue">Easy Bible Archive</span>
+            <span className="badge-archival bg-accent-blue">쉬운성경</span>
           </div>
         </div>
-        <button onClick={onClose} className="p-3 hover:bg-bg-secondary rounded-full border border-border-light shadow-subtle transition-colors"><X className="w-6 h-6" /></button>
+        <button onClick={onClose} className="p-2 hover:bg-bg-secondary rounded-full transition-colors"><X className="w-4 h-4 text-text-tertiary" /></button>
       </header>
 
       <div className="flex bg-bg-primary border-b border-border-light shrink-0">
@@ -2009,7 +2542,7 @@ const ExegesisOverlay: React.FC<{
           className={`flex-1 py-4 text-[10px] font-black text-center transition-all relative uppercase tracking-[0.2em] ${activeTab === 'fulltext' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
         >
           <span className="inline-flex items-center gap-2">
-            MANUSCRIPT
+            본문
             {activeTab !== 'fulltext' && fullText && !fullText.done && <span className="w-1.5 h-1.5 bg-accent-blue rounded-full animate-pulse" />}
           </span>
           {activeTab === 'fulltext' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
@@ -2019,7 +2552,7 @@ const ExegesisOverlay: React.FC<{
           className={`flex-1 py-4 text-[10px] font-black text-center transition-all relative uppercase tracking-[0.2em] ${activeTab === 'exegesis' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
         >
           <span className="inline-flex items-center gap-2">
-            EXEGESIS
+            해설
             {activeTab !== 'exegesis' && isStreaming && <span className="w-1.5 h-1.5 bg-accent-blue rounded-full animate-pulse" />}
           </span>
           {activeTab === 'exegesis' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
@@ -2031,7 +2564,7 @@ const ExegesisOverlay: React.FC<{
           {fullText && fullText.verses.length === 0 && !fullText.done ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-6 paper-texture">
               <Loader2 className="w-10 h-10 text-text-tertiary animate-spin opacity-30" />
-              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Retrieving manuscript...</p>
+              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">본문을 불러오는 중...</p>
             </div>
           ) : (
             <div className="flex-1 min-h-0 flex flex-col paper-texture">
@@ -2042,35 +2575,39 @@ const ExegesisOverlay: React.FC<{
                     const [bc, bv] = b.verseNum.split(':').map(Number);
                     return (ac - bc) || (av - bv);
                   }).map((verse, idx) => (
-                    <div key={idx} className="flex gap-4 items-start animate-in fade-in duration-500 group">
+                    <div key={idx} className="flex gap-4 items-start animate-in fade-in duration-500"
+                      onMouseEnter={() => { hoverTimerRef.current = setTimeout(() => setHoveredVerse(idx), 2000); }}
+                      onMouseLeave={() => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); setHoveredVerse(null); }}
+                      onTouchStart={() => { hoverTimerRef.current = setTimeout(() => setHoveredVerse(idx), 1500); }}
+                      onTouchEnd={() => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); }}
+                    >
                       <span className="text-accent-blue font-black text-[10px] mt-1.5 shrink-0 w-12 text-right tabular-nums tracking-tighter opacity-50">{verse.verseNum}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-text-primary leading-[2.1] font-medium flex flex-wrap serif-text" style={{ fontSize: `${fontSize}px` }}>
-                          {verse.text.split(/(\s+)/).map((segment, sIdx) => {
-                            if (/^\s+$/.test(segment)) return <span key={sIdx}>{segment}</span>;
-                            const cleaned = segment.replace(/^[^\uAC00-\uD7A3a-zA-Z0-9]+|[^\uAC00-\uD7A3a-zA-Z0-9]+$/g, '');
-                            const noun = extractNoun(cleaned);
-                            const isTapped = tappedWords.some(w => w.word === noun);
-                            return (
-                              <span
-                                key={sIdx}
-                                onClick={() => handleWordTap(segment, verse.text)}
-                                className={`cursor-pointer transition-all rounded px-0.5 border-b-2 decoration-accent-blue/20 hover:bg-accent-blue/5 ${isTapped ? 'bg-bg-paper text-accent-blue border-accent-blue' : 'border-transparent'}`}
+                        <p
+                          data-highlightable
+                          className="text-text-primary leading-[2.1] font-medium serif-text select-text"
+                          style={{ fontSize: `${fontSize}px` }}
+                          onMouseUp={() => handleTextSelect(`ft-${data.range}-${verse.verseNum}`, verse.text)}
+                          onTouchEnd={() => setTimeout(() => handleTextSelect(`ft-${data.range}-${verse.verseNum}`, verse.text), 300)}
+                        >
+                          {renderHighlightedText(verse.text, `ft-${data.range}-${verse.verseNum}`, verse.text)}
+                          {(hoveredVerse === idx || bookmarkedIds.has(`ft-bm-${idx}`)) && (
+                            <span className="inline-flex items-center gap-1 ml-1.5 align-middle animate-in fade-in duration-200">
+                              <button
+                                onClick={() => handleBookmark(verse.text, `${data.range} ${verse.verseNum}`, `ft-bm-${idx}`)}
+                                className={`text-[8px] font-black px-1.5 py-0.5 rounded border transition-all ${bookmarkedIds.has(`ft-bm-${idx}`) ? 'bg-accent-black text-white border-accent-black' : 'bg-bg-secondary text-text-tertiary border-border-light hover:border-accent-black hover:text-accent-black'}`}
                               >
-                                {segment}
-                              </span>
-                            );
-                          })}
+                                {bookmarkedIds.has(`ft-bm-${idx}`) ? '저장됨' : '저장'}
+                              </button>
+                              <button
+                                onClick={() => onCopy(verse.text, `ft-cp-${idx}`)}
+                                className={`text-[8px] font-black px-1.5 py-0.5 rounded border transition-all ${copiedId === `ft-cp-${idx}` ? 'bg-accent-green text-white border-accent-green' : 'bg-bg-secondary text-text-tertiary border-border-light hover:border-accent-black hover:text-accent-black'}`}
+                              >
+                                {copiedId === `ft-cp-${idx}` ? '복사됨' : '복사'}
+                              </button>
+                            </span>
+                          )}
                         </p>
-                        <div className="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleBookmark(verse.text, `${data.range} ${verse.verseNum}`, `ft-bm-${idx}`)}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black transition-all border ${bookmarkedIds.has(`ft-bm-${idx}`) ? 'bg-accent-black text-white' : 'bg-bg-primary text-text-tertiary border-border-light hover:border-accent-black hover:text-accent-black shadow-subtle'}`}
-                          >
-                            {bookmarkedIds.has(`ft-bm-${idx}`) ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-                            <span className="uppercase tracking-widest">{bookmarkedIds.has(`ft-bm-${idx}`) ? 'ARCHIVED' : 'ARCHIVE'}</span>
-                          </button>
-                        </div>
                       </div>
                     </div>
                   ))}
@@ -2085,11 +2622,11 @@ const ExegesisOverlay: React.FC<{
                 <div className="shrink-0 border-t border-border-light bg-bg-primary px-8 py-4 flex items-center justify-between animate-in fade-in slide-in-from-bottom duration-300 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-black text-accent-blue bg-bg-paper px-2 py-0.5 rounded border border-border-light">"{pendingWord.word}"</span>
-                    <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Identify this term?</span>
+                    <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">이 단어를 저장할까요?</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => setPendingWord(null)} className="px-3 py-1.5 text-[10px] font-black text-text-tertiary hover:text-accent-black transition-colors uppercase tracking-widest">CANCEL</button>
-                    <button onClick={confirmWord} className="btn-analogue bg-accent-black text-white px-4 py-2 text-[10px]">ADD TO LIBRARY</button>
+                    <button onClick={() => setPendingWord(null)} className="px-3 py-1.5 text-[10px] font-black text-text-tertiary hover:text-accent-black transition-colors uppercase tracking-widest">취소</button>
+                    <button onClick={confirmWord} className="btn-analogue bg-accent-black text-white px-4 py-2 text-[10px]">저장</button>
                   </div>
                 </div>
               )}
@@ -2097,11 +2634,11 @@ const ExegesisOverlay: React.FC<{
                 <div className="shrink-0 border-t border-border-light bg-bg-primary px-8 py-4 flex items-center justify-between animate-in fade-in slide-in-from-bottom duration-300 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-black text-accent-red bg-bg-paper px-2 py-0.5 rounded border border-border-light">"{pendingRemoveWord}"</span>
-                    <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Delete from library?</span>
+                    <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">이 단어를 삭제할까요?</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => setPendingRemoveWord(null)} className="px-3 py-1.5 text-[10px] font-black text-text-tertiary hover:text-accent-black transition-colors uppercase tracking-widest">CANCEL</button>
-                    <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== pendingRemoveWord)); onRemoveWord(pendingRemoveWord!); setPendingRemoveWord(null); }} className="btn-analogue bg-accent-red text-white px-4 py-2 text-[10px] border-accent-red">DELETE</button>
+                    <button onClick={() => setPendingRemoveWord(null)} className="px-3 py-1.5 text-[10px] font-black text-text-tertiary hover:text-accent-black transition-colors uppercase tracking-widest">취소</button>
+                    <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== pendingRemoveWord)); onRemoveWord(pendingRemoveWord!); setPendingRemoveWord(null); }} className="btn-analogue bg-accent-red text-white px-4 py-2 text-[10px] border-accent-red">삭제</button>
                   </div>
                 </div>
               )}
@@ -2110,10 +2647,10 @@ const ExegesisOverlay: React.FC<{
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Languages className="w-4 h-4 text-accent-blue" />
-                      <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Active Research Logs</span>
+                      <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">선택한 단어</span>
                       <span className="text-[9px] font-black text-white bg-accent-blue px-1.5 py-0.5 rounded-full">{tappedWords.length}</span>
                     </div>
-                    <button onClick={() => setTappedWords([])} className="text-[9px] font-black text-text-tertiary hover:text-accent-red transition-colors uppercase tracking-widest">Clear Logs</button>
+                    <button onClick={() => setTappedWords([])} className="text-[9px] font-black text-text-tertiary hover:text-accent-red transition-colors uppercase tracking-widest">전체 삭제</button>
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
                     {tappedWords.map((tw, idx) => (
@@ -2139,38 +2676,38 @@ const ExegesisOverlay: React.FC<{
           {data.items.length === 0 && isStreaming ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-6 paper-texture">
               <Loader2 className="w-10 h-10 text-text-tertiary animate-spin opacity-30" />
-              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Performing verse analysis...</p>
+              <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">구절 해설을 준비하는 중...</p>
             </div>
           ) : (
             <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto paper-texture">
               <div className="max-w-3xl mx-auto p-8 md:p-12 space-y-12 pb-24">
                 {data.items.map((item, idx) => (
-                  <div key={idx} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-bg-primary rounded-xl border border-border-light overflow-hidden shadow-card sticker-card p-0 after:content-none before:left-1/2 before:-translate-x-1/2 before:w-16 before:top-[-10px]">
+                  <div key={idx} id={`exegesis-card-${idx}`} className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-bg-primary rounded-xl border border-border-light overflow-hidden shadow-card">
                     <div className="p-6 bg-bg-paper border-b border-border-light">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="badge-archival bg-accent-blue">{item.verseNum}</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleBookmark(item.text, `${data.range} ${item.verseNum}`, `bm-v-${idx}`)}
-                            className={`p-2 rounded-full transition-all border ${bookmarkedIds.has(`bm-v-${idx}`) ? 'bg-accent-black text-white border-accent-black' : 'bg-bg-primary text-text-tertiary border-border-light hover:border-accent-black hover:text-accent-black shadow-subtle'}`}
-                          >
-                            {bookmarkedIds.has(`bm-v-${idx}`) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                          </button>
-                          <button onClick={() => onAsk(item.text, `${data.range} ${item.verseNum}`)} className="p-2 bg-bg-primary text-text-tertiary border border-border-light hover:border-accent-black hover:text-accent-black rounded-full transition-all shadow-subtle"><MessageSquare className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => onCopy(item.text, `ex-v-${idx}`)} className={`p-2 rounded-full transition-all border ${copiedId === `ex-v-${idx}` ? 'bg-accent-green text-white border-accent-green' : 'bg-bg-primary text-text-tertiary border-border-light hover:border-accent-black hover:text-accent-black shadow-subtle'}`}>{copiedId === `ex-v-${idx}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}</button>
-                        </div>
-                      </div>
-                      <p className="text-text-primary font-black leading-relaxed serif-text" style={{ fontSize: `${fontSize + 2}px` }}>{item.text}</p>
+                      <span className="badge-archival bg-accent-blue mb-3">{item.verseNum}</span>
+                      <p className="text-text-primary font-black leading-relaxed serif-text mt-3" style={{ fontSize: `${fontSize}px` }}>{item.text}</p>
                     </div>
-                    <div className="p-8 pb-10 bg-bg-primary">
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="w-1 h-4 bg-accent-black" />
-                        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">Scholarly Commentary</span>
-                      </div>
-                      <p className="text-text-secondary leading-[1.8] whitespace-pre-wrap font-medium serif-text italic" style={{ fontSize: `${fontSize}px` }}>{item.explanation}</p>
-                      <div className="flex items-center gap-2 mt-8 pt-6 border-t border-border-light/50">
-                        <button onClick={() => handleBookmark(item.explanation, `${data.range} ${item.verseNum} Commentary`, `bm-e-${idx}`)} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all border ${bookmarkedIds.has(`bm-e-${idx}`) ? 'bg-accent-black text-white' : 'bg-bg-secondary text-text-tertiary border-border-light shadow-subtle'}`}>Commentary Archive</button>
-                        <button onClick={() => onCopy(item.explanation, `ex-e-${idx}`)} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all border ${copiedId === `ex-e-${idx}` ? 'bg-accent-green text-white' : 'bg-bg-secondary text-text-tertiary border-border-light shadow-subtle'}`}>Copy Reference</button>
+                    <div className="p-6 bg-bg-primary">
+                      <p
+                        data-highlightable
+                        className="text-text-secondary leading-[1.8] whitespace-pre-wrap serif-text select-text"
+                        style={{ fontSize: `${fontSize - 1}px` }}
+                        onMouseUp={() => handleTextSelect(`${data.range}-${item.verseNum}`, item.explanation)}
+                        onTouchEnd={() => setTimeout(() => handleTextSelect(`${data.range}-${item.verseNum}`, item.explanation), 300)}
+                      >
+                        {renderHighlightedText(item.explanation, `${data.range}-${item.verseNum}`)}
+                      </p>
+                      <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border-light/50">
+                        <button
+                          onClick={() => {
+                            const fullText = `[${data.range} ${item.verseNum}]\n${item.text}\n\n[해설]\n${item.explanation}`;
+                            onCopy(fullText, `ex-all-${idx}`);
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-black transition-all border ${copiedId === `ex-all-${idx}` ? 'bg-accent-green text-white border-accent-green' : 'bg-bg-secondary text-text-tertiary border-border-light shadow-subtle hover:border-accent-black hover:text-accent-black'}`}
+                        >
+                          {copiedId === `ex-all-${idx}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {copiedId === `ex-all-${idx}` ? '복사됨' : '복사'}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2185,6 +2722,7 @@ const ExegesisOverlay: React.FC<{
           )}
         </>
       )}
+
     </div>
   );
 };
