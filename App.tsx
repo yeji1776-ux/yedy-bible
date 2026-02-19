@@ -1815,7 +1815,7 @@ const App: React.FC = () => {
                     <MessageCircle className="w-3.5 h-3.5" />
                     <h3 className="font-black uppercase tracking-[0.3em]" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>오늘의 묵상</h3>
                   </div>
-                  <p className="text-text-primary font-bold leading-relaxed mb-3 serif-text" style={{ fontSize: `${titleFontSize - 2}px` }}>{reflection.meditation_question}</p>
+                  <p className="text-text-primary font-bold leading-relaxed mb-3 serif-text" style={{ fontSize: `${fontSize}px` }}>{reflection.meditation_question}</p>
                   <textarea
                     value={savedMeditations[selectedDate.toISOString().split('T')[0]] || ''}
                     onChange={e => handleSaveMeditation(e.target.value)}
