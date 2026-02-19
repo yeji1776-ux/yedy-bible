@@ -283,16 +283,17 @@ export async function generateSimplifiedVerses(
   verses: BibleVerse[],
   range: string
 ): Promise<Record<string, string>> {
+  if (!verses.length) return {};
   return withRetry(async () => {
     const versesText = verses.map(v => `${v.verseNum} ${v.text}`).join("\n");
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 4000,
+      max_tokens: 16000,
       messages: [
         {
           role: "system",
           content:
-            "개역한글 성경 본문을 현대 한국어로 쉽게 풀어써 주세요. 의역이 아니라 같은 의미를 쉬운 말로 바꿔 주세요. 1절당 1문장으로 간결하게. 반드시 지정된 JSON 형식으로만 응답하세요.",
+            "개역한글 성경 본문을 현대 한국어로 쉽게 풀어써 주세요. 의역이 아니라 같은 의미를 쉬운 말로 바꿔 주세요. 1절당 1문장으로 간결하게. verseNum은 입력과 동일한 형식(예: '1:1')으로 그대로 사용하세요.",
         },
         {
           role: "user",

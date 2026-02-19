@@ -1645,13 +1645,15 @@ const App: React.FC = () => {
       setStreamingExegesis({ range: data.range, version: '개역한글', items: cachedExegesis, done: true });
       setFullBibleText({ range: data.range, version: '개역한글', verses: cachedFullText, done: true });
       setSimpleTexts(cachedSimple || null);
-      if (!cachedSimple) {
+      if (!cachedSimple && cachedFullText.length > 0) {
         setSimpleTextsLoading(true);
         generateSimplifiedVerses(cachedFullText, data.range).then(result => {
-          setSimpleTexts(result);
-          simpleTextCacheRef.current[cacheKey] = result;
-          try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
-        }).catch(() => {}).finally(() => setSimpleTextsLoading(false));
+          if (Object.keys(result).length > 0) {
+            setSimpleTexts(result);
+            simpleTextCacheRef.current[cacheKey] = result;
+            try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
+          }
+        }).catch((err) => { console.error('쉬운 설명 생성 실패:', err); }).finally(() => setSimpleTextsLoading(false));
       }
       return;
     }
@@ -1679,12 +1681,16 @@ const App: React.FC = () => {
       fullBibleTextCacheRef.current[cacheKey] = collectedVerses;
       try { localStorage.setItem('bible_fulltext_cache_krv', JSON.stringify(fullBibleTextCacheRef.current)); } catch {}
       // Generate simplified texts after full text is loaded
-      if (!cachedSimple) {
+      if (!cachedSimple && collectedVerses.length > 0) {
         generateSimplifiedVerses(collectedVerses, data.range).then(result => {
-          setSimpleTexts(result);
-          simpleTextCacheRef.current[cacheKey] = result;
-          try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
-        }).catch(() => {}).finally(() => setSimpleTextsLoading(false));
+          if (Object.keys(result).length > 0) {
+            setSimpleTexts(result);
+            simpleTextCacheRef.current[cacheKey] = result;
+            try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
+          }
+        }).catch((err) => { console.error('쉬운 설명 생성 실패:', err); }).finally(() => setSimpleTextsLoading(false));
+      } else if (!cachedSimple) {
+        setSimpleTextsLoading(false);
       }
     }).catch(() => {
       setFullBibleText(prev => prev ? { ...prev, done: true } : prev);
