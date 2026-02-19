@@ -40,7 +40,8 @@ import {
   BarChart3,
   LogOut,
   Share2,
-  Heart
+  Heart,
+  Underline
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, streamFullBibleText, getDeepReflection, playTTS, fetchWordMeaning } from './services/geminiService';
@@ -676,83 +677,83 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
   const [startDate, setStartDate] = useState(currentPlan?.startDate ? new Date(currentPlan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
 
   return (
-    <div className="max-w-md mx-auto p-8 space-y-12 animate-in fade-in zoom-in-95 duration-500">
-      <div className="text-center space-y-4">
-        <div className="bg-bg-paper w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-subtle border border-border-light">
-          <BookOpen className="w-8 h-8 text-accent-blue" />
+    <div className="max-w-md mx-auto p-6 space-y-8 animate-in fade-in zoom-in-95 duration-500">
+      <div className="text-center space-y-3">
+        <div className="bg-bg-paper w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-subtle border border-border-light">
+          <BookOpen className="w-6 h-6 text-accent-blue" />
         </div>
-        <h2 className="text-xl font-black text-text-primary serif-text tracking-tighter">{currentPlan ? "통독 계획 수정" : "통독 계획 설정"}</h2>
-        <p className="text-text-tertiary text-[10px] font-black leading-relaxed px-6 uppercase tracking-widest">읽기 범위와 시작일을 설정하세요</p>
+        <h2 className="text-lg font-black text-text-primary serif-text tracking-tighter">{currentPlan ? "통독 계획 수정" : "통독 계획 설정"}</h2>
+        <p className="text-text-tertiary text-[9px] font-black leading-relaxed px-6 uppercase tracking-widest">읽기 범위와 시작일을 설정하세요</p>
       </div>
 
-      <div className="space-y-10">
-        <div className="space-y-4">
-          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1 flex items-center gap-2"><CalendarDays className="w-3.5 h-3.5" /> 시작일</h3>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h3 className="font-black text-[9px] text-text-tertiary uppercase tracking-widest px-1 flex items-center gap-2"><CalendarDays className="w-3 h-3" /> 시작일</h3>
           <input
             type="date"
             value={startDate}
             onChange={e => setStartDate(e.target.value)}
-            className="w-full bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle"
+            className="w-full bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle"
           />
         </div>
 
-        <div className="space-y-5">
-          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1">구약 설정</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <select value={otBook} onChange={e => setOtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
+        <div className="space-y-3">
+          <h3 className="font-black text-[9px] text-text-tertiary uppercase tracking-widest px-1">구약 설정</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <select value={otBook} onChange={e => setOtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
               {(BIBLE_METADATA.OT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
             </select>
             <div className="relative">
-              <input type="number" value={otStart} onChange={e => setOtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
+              <input type="number" value={otStart} onChange={e => setOtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[9px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
+            <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setOtPerDay(n)}
-                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${otPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
+                  className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${otPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
                 >{n}</button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="space-y-5">
-          <h3 className="font-black text-[10px] text-text-tertiary uppercase tracking-widest px-1">신약 설정</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <select value={ntBook} onChange={e => setNtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
+        <div className="space-y-3">
+          <h3 className="font-black text-[9px] text-text-tertiary uppercase tracking-widest px-1">신약 설정</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <select value={ntBook} onChange={e => setNtBook(e.target.value)} className="bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-bold outline-none focus:border-accent-black transition-all shadow-subtle">
               {(BIBLE_METADATA.NT || []).map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
             </select>
             <div className="relative">
-              <input type="number" value={ntStart} onChange={e => setNtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-2xl px-5 py-4 text-sm font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
+              <input type="number" value={ntStart} onChange={e => setNtStart(parseInt(e.target.value) || 1)} className="w-full bg-bg-primary border border-border-light rounded-xl px-3 py-2.5 text-xs font-mono font-bold outline-none focus:border-accent-black transition-all shadow-subtle" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-text-tertiary uppercase tracking-tighter">시작 장</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[9px] text-text-tertiary font-black uppercase tracking-widest">하루 장수</span>
+            <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setNtPerDay(n)}
-                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${ntPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
+                  className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${ntPerDay === n ? 'bg-accent-black text-white shadow-xl' : 'bg-bg-secondary text-text-secondary hover:bg-border-light'}`}
                 >{n}</button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 pt-4">
+        <div className="flex flex-col gap-3 pt-2">
           <button
             onClick={() => onSave({ otBook, otStartChapter: otStart, ntBook, ntStartChapter: ntStart, startDate: new Date(startDate).toISOString(), otChaptersPerDay: otPerDay, ntChaptersPerDay: ntPerDay, isPaused: false, pausedAt: null, totalPausedDays: currentPlan?.totalPausedDays || 0 })}
-            className="btn-analogue w-full py-5 text-[10px] tracking-[0.2em] font-black bg-accent-black text-white"
+            className="btn-analogue w-full py-3.5 text-[10px] tracking-[0.2em] font-black bg-accent-black text-white"
           >
             {currentPlan ? "계획 수정" : "시작하기"}
           </button>
           {onCancel && (
             <button
               onClick={onCancel}
-              className="w-full bg-transparent text-text-tertiary py-3.5 rounded-2xl font-black text-[10px] hover:text-accent-black transition-all uppercase tracking-widest"
+              className="w-full bg-transparent text-text-tertiary py-2.5 rounded-xl font-black text-[10px] hover:text-accent-black transition-all uppercase tracking-widest"
             >
               취소
             </button>
@@ -771,7 +772,53 @@ const BookmarkPanel: React.FC<{
   savedWords: Record<string, Array<{ word: string; meaning: string }>>,
   onDeleteWord: (dateStr: string, word: string) => void
 }> = ({ bookmarks, onDelete, onClose, fontSize, savedWords, onDeleteWord }) => {
-  const [activeTab, setActiveTab] = useState<'bookmarks' | 'words'>('bookmarks');
+  const [activeTab, setActiveTab] = useState<'bookmarks' | 'highlights' | 'words'>('bookmarks');
+
+  // Read highlights from localStorage
+  type HLItem = { id: string; start: number; end: number; note: string; text?: string };
+  const [allHighlights, setAllHighlights] = useState<Record<string, HLItem[]>>(() => {
+    try { const s = localStorage.getItem('bible_highlights'); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+
+  const deleteHighlight = (cardKey: string, hlId: string) => {
+    const next = { ...allHighlights };
+    next[cardKey] = (next[cardKey] || []).filter(h => h.id !== hlId);
+    if (next[cardKey].length === 0) delete next[cardKey];
+    setAllHighlights(next);
+    localStorage.setItem('bible_highlights', JSON.stringify(next));
+  };
+
+  // Parse cardKey to get Bible reference: "ft-창세기 1-2-1:3" or "레위기 5-6-5:1"
+  const parseCardKey = (key: string) => {
+    const clean = key.startsWith('ft-') ? key.slice(3) : key;
+    const lastDash = clean.lastIndexOf('-');
+    if (lastDash > 0) {
+      return { range: clean.slice(0, lastDash), verse: clean.slice(lastDash + 1) };
+    }
+    return { range: clean, verse: '' };
+  };
+
+  // Flatten highlights into a list with metadata
+  const flatHighlights = (Object.entries(allHighlights) as [string, HLItem[]][]).flatMap(([cardKey, hls]) => {
+    const { range, verse } = parseCardKey(cardKey);
+    return hls.map(hl => ({
+      ...hl,
+      cardKey,
+      range,
+      verse,
+      source: `${range} ${verse}`,
+      date: new Date(parseInt(hl.id)).toISOString().split('T')[0],
+      isFulltext: cardKey.startsWith('ft-'),
+    }));
+  }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+
+  // Group by date
+  const hlByDate = flatHighlights.reduce((acc: Record<string, typeof flatHighlights>, hl) => {
+    if (!acc[hl.date]) acc[hl.date] = [];
+    acc[hl.date].push(hl);
+    return acc;
+  }, {});
+  const sortedHlDates = Object.keys(hlByDate).sort((a, b) => b.localeCompare(a));
 
   const groupedBookmarks = bookmarks.reduce((acc: Record<string, BookmarkType[]>, bm) => {
     const dateKey = bm.created_at ? new Date(bm.created_at).toISOString().split('T')[0] : 'unknown';
@@ -785,7 +832,7 @@ const BookmarkPanel: React.FC<{
   const formatDateHeader = (dateStr: string) => {
     if (dateStr === 'unknown') return 'DATE UNKNOWN';
     const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+    return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
   const totalWords = sortedWordDates.reduce((sum, d) => sum + savedWords[d].length, 0);
@@ -795,7 +842,7 @@ const BookmarkPanel: React.FC<{
       <header className="bg-bg-primary border-b border-border-light p-6 sticky top-0 z-10 flex items-center justify-between shadow-subtle">
         <div>
           <h3 className="text-xl font-black text-text-primary serif-text uppercase tracking-tighter">내 서재</h3>
-          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">저장한 구절 & 단어</p>
+          <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">저장한 구절 & 단어 & 밑줄</p>
         </div>
         <button onClick={onClose} className="p-3 hover:bg-bg-secondary rounded-full transition-colors border border-border-light shadow-subtle"><X className="w-5 h-5" /></button>
       </header>
@@ -803,21 +850,31 @@ const BookmarkPanel: React.FC<{
       <div className="flex bg-bg-primary border-b border-border-light shrink-0">
         <button
           onClick={() => setActiveTab('bookmarks')}
-          className={`flex-1 py-4 text-[10px] font-black text-center transition-all relative uppercase tracking-[0.2em] ${activeTab === 'bookmarks' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
+          className={`flex-1 py-3.5 text-[9px] font-black text-center transition-all relative uppercase tracking-[0.15em] ${activeTab === 'bookmarks' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
         >
-          <span className="inline-flex items-center gap-2">
-            <BookmarkCheck className="w-3.5 h-3.5" /> 북마크
-            <span className="text-[9px] font-black text-white bg-accent-black px-1.5 py-0.5 rounded-full">{bookmarks.length}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <BookmarkCheck className="w-3 h-3" /> 북마크
+            <span className="text-[8px] font-black text-white bg-accent-black px-1.5 py-0.5 rounded-full">{bookmarks.length}</span>
           </span>
           {activeTab === 'bookmarks' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
         </button>
         <button
-          onClick={() => setActiveTab('words')}
-          className={`flex-1 py-4 text-[10px] font-black text-center transition-all relative uppercase tracking-[0.2em] ${activeTab === 'words' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
+          onClick={() => setActiveTab('highlights')}
+          className={`flex-1 py-3.5 text-[9px] font-black text-center transition-all relative uppercase tracking-[0.15em] ${activeTab === 'highlights' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
         >
-          <span className="inline-flex items-center gap-2">
-            <Languages className="w-3.5 h-3.5" /> 주요 단어
-            <span className="text-[9px] font-black text-white bg-accent-black px-1.5 py-0.5 rounded-full">{totalWords}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <Underline className="w-3 h-3" /> 밑줄
+            <span className="text-[8px] font-black text-white bg-accent-blue px-1.5 py-0.5 rounded-full">{flatHighlights.length}</span>
+          </span>
+          {activeTab === 'highlights' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
+        </button>
+        <button
+          onClick={() => setActiveTab('words')}
+          className={`flex-1 py-3.5 text-[9px] font-black text-center transition-all relative uppercase tracking-[0.15em] ${activeTab === 'words' ? 'text-accent-black' : 'text-text-tertiary opacity-50'}`}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Languages className="w-3 h-3" /> 단어
+            <span className="text-[8px] font-black text-white bg-accent-black px-1.5 py-0.5 rounded-full">{totalWords}</span>
           </span>
           {activeTab === 'words' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent-black" />}
         </button>
@@ -855,6 +912,51 @@ const BookmarkPanel: React.FC<{
                           </div>
                           <button onClick={() => bm.id && onDelete(bm.id)} className="p-2 text-text-tertiary hover:text-accent-red transition-colors shrink-0">
                             <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : activeTab === 'highlights' ? (
+          flatHighlights.length === 0 ? (
+            <div className="py-24 text-center">
+              <div className="w-16 h-16 bg-bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 border border-border-light shadow-inner sticker-card">
+                <Underline className="w-8 h-8 text-text-tertiary opacity-30" />
+              </div>
+              <p className="font-black text-xs text-text-tertiary uppercase tracking-widest leading-loose text-center">밑줄 친 내용이 없습니다.<br />본문이나 해설에서 텍스트를 드래그해보세요.</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {sortedHlDates.map(dateStr => (
+                <div key={dateStr}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <CalendarDays className="w-3.5 h-3.5 text-text-tertiary" />
+                    <h4 className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">{formatDateHeader(dateStr)}</h4>
+                  </div>
+                  <div className="space-y-4">
+                    {hlByDate[dateStr].map(hl => (
+                      <div key={hl.id} className="sticker-card py-4 px-6">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span className="badge-archival text-[8px]">{hl.source}</span>
+                              <span className="text-[8px] font-black text-text-tertiary px-1.5 py-0.5 rounded bg-bg-secondary border border-border-light">{hl.isFulltext ? '본문' : '해설'}</span>
+                            </div>
+                            <p className="text-text-primary font-bold leading-relaxed serif-text mt-1" style={{ fontSize: `${fontSize - 1}px`, borderBottom: '2px solid var(--color-accent-blue)', display: 'inline', paddingBottom: '1px', background: 'rgba(59,130,246,0.08)' }}>
+                              {hl.text || '(밑줄 텍스트)'}
+                            </p>
+                            {hl.note && (
+                              <div className="mt-3 p-3 rounded-lg text-[11px] leading-relaxed" style={{ background: 'rgba(74,93,116,0.07)', border: '1px solid rgba(74,93,116,0.15)', color: 'var(--color-accent-blue)' }}>
+                                {hl.note}
+                              </div>
+                            )}
+                          </div>
+                          <button onClick={() => deleteHighlight(hl.cardKey, hl.id)} className="p-2 text-text-tertiary hover:text-accent-red transition-colors shrink-0">
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -1276,6 +1378,7 @@ const App: React.FC = () => {
   const [fullBibleText, setFullBibleText] = useState<{ range: string; version: string; verses: BibleVerse[]; done: boolean } | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'reading'>('home');
   const [showJournal, setShowJournal] = useState(false);
+  const [medSaveFlash, setMedSaveFlash] = useState(false);
   const [journalTab, setJournalTab] = useState<'meditation' | 'otNotes' | 'ntNotes'>('meditation');
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1689,10 +1792,15 @@ const App: React.FC = () => {
                     style={{ fontSize: `${fontSize - 2}px` }}
                   />
                   <button
-                    onClick={() => setShowJournal(true)}
-                    className="mt-3 w-full bg-accent-black text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all hover:opacity-90"
+                    onClick={() => {
+                      handleSaveMeditation(savedMeditations[selectedDate.toISOString().split('T')[0]] || '');
+                      setMedSaveFlash(true);
+                      setTimeout(() => setMedSaveFlash(false), 1500);
+                    }}
+                    disabled={!savedMeditations[selectedDate.toISOString().split('T')[0]]?.trim()}
+                    className={`mt-3 w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${medSaveFlash ? 'bg-accent-green text-white' : 'bg-accent-black text-white hover:opacity-90'} disabled:opacity-30 disabled:cursor-not-allowed`}
                   >
-                    묵상 일지 보기
+                    {medSaveFlash ? '저장 완료' : '저장'}
                   </button>
                 </div>
                 <div className="rounded-xl p-8 shadow-card sticker-card">
@@ -2263,8 +2371,8 @@ const ExegesisOverlay: React.FC<{
   const [hoveredVerse, setHoveredVerse] = useState<number | null>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Highlight & memo state for exegesis
-  type Highlight = { id: string; start: number; end: number; note: string };
+  // Highlight & memo state
+  type Highlight = { id: string; start: number; end: number; note: string; text: string };
   const [highlights, setHighlights] = useState<Record<string, Highlight[]>>(() => {
     try { const s = localStorage.getItem('bible_highlights'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
@@ -2307,8 +2415,8 @@ const ExegesisOverlay: React.FC<{
   // Step 2a: Create underline only
   const confirmUnderline = () => {
     if (!pendingSelect) return;
-    const { cardKey, start, end } = pendingSelect;
-    const newHl: Highlight = { id: Date.now().toString(), start, end, note: '' };
+    const { cardKey, start, end, text: hlText } = pendingSelect;
+    const newHl: Highlight = { id: Date.now().toString(), start, end, note: '', text: hlText };
     saveHighlights({ ...highlights, [cardKey]: [...(highlights[cardKey] || []), newHl] });
     setPendingSelect(null);
   };
@@ -2316,9 +2424,9 @@ const ExegesisOverlay: React.FC<{
   // Step 2b: Create underline + open memo
   const confirmUnderlineWithMemo = () => {
     if (!pendingSelect) return;
-    const { cardKey, start, end } = pendingSelect;
+    const { cardKey, start, end, text: hlText } = pendingSelect;
     const id = Date.now().toString();
-    const newHl: Highlight = { id, start, end, note: '' };
+    const newHl: Highlight = { id, start, end, note: '', text: hlText };
     saveHighlights({ ...highlights, [cardKey]: [...(highlights[cardKey] || []), newHl] });
     setPendingSelect(null);
     setMemoText('');
