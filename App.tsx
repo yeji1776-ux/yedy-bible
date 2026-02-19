@@ -1737,7 +1737,7 @@ const App: React.FC = () => {
           ntColor="accent-green"
         />
       ) : (
-        <main className="p-5 space-y-12">
+        <main className="p-4 space-y-6">
           {aiState.loading && !reflection ? (
             <div className="py-32 flex flex-col items-center justify-center space-y-5">
               <Loader2 className="w-12 h-12 text-accent-black animate-spin" />
@@ -1777,19 +1777,19 @@ const App: React.FC = () => {
                   onSaveNote={(n) => handleSaveNote('new', n)}
                 />
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
-                <div className="rounded-xl p-8 shadow-card sticker-card">
-                  <div className="flex items-center gap-3 mb-5 text-text-tertiary">
-                    <MessageCircle className="w-4 h-4" />
-                    <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">오늘의 묵상</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+                <div className="rounded-lg p-5 shadow-card sticker-card">
+                  <div className="flex items-center gap-2 mb-3 text-text-tertiary">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <h3 className="font-black text-[9px] uppercase tracking-[0.3em]">오늘의 묵상</h3>
                   </div>
-                  <p className="text-text-primary font-bold leading-relaxed mb-6 serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{reflection.meditation_question}</p>
+                  <p className="text-text-primary font-bold leading-relaxed mb-3 serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{reflection.meditation_question}</p>
                   <textarea
                     value={savedMeditations[selectedDate.toISOString().split('T')[0]] || ''}
                     onChange={e => handleSaveMeditation(e.target.value)}
                     placeholder="묵상 질문에 대한 나의 생각을 적어보세요..."
-                    className="w-full bg-bg-paper border border-border-light rounded-xl p-4 text-text-secondary leading-relaxed resize-none focus:border-accent-blue focus:outline-none transition-colors serif-text"
-                    rows={4}
+                    className="w-full bg-bg-paper border border-border-light rounded-lg p-3 text-text-secondary leading-relaxed resize-none focus:border-accent-blue focus:outline-none transition-colors serif-text text-xs"
+                    rows={3}
                     style={{ fontSize: `${fontSize - 2}px` }}
                   />
                   <button
@@ -1799,21 +1799,21 @@ const App: React.FC = () => {
                       setTimeout(() => setMedSaveFlash(false), 1500);
                     }}
                     disabled={!savedMeditations[selectedDate.toISOString().split('T')[0]]?.trim()}
-                    className={`mt-3 w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${medSaveFlash ? 'bg-accent-green text-white' : 'bg-accent-black text-white hover:opacity-90'} disabled:opacity-30 disabled:cursor-not-allowed`}
+                    className={`mt-2 w-full py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${medSaveFlash ? 'bg-accent-green text-white' : 'bg-accent-black text-white hover:opacity-90'} disabled:opacity-30 disabled:cursor-not-allowed`}
                   >
                     {medSaveFlash ? '저장 완료' : '저장'}
                   </button>
                 </div>
-                <div className="rounded-xl p-8 shadow-card sticker-card">
-                  <div className="flex items-center gap-3 mb-5 text-text-tertiary">
-                    <Heart className="w-4 h-4" />
-                    <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">오늘의 기도제목</h3>
+                <div className="rounded-lg p-5 shadow-card sticker-card">
+                  <div className="flex items-center gap-2 mb-3 text-text-tertiary">
+                    <Heart className="w-3.5 h-3.5" />
+                    <h3 className="font-black text-[9px] uppercase tracking-[0.3em]">오늘의 기도제목</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {reflection.prayer_topics && reflection.prayer_topics.length > 0 ? (
                       reflection.prayer_topics.map((topic: string, i: number) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <span className="text-accent-blue font-black text-xs mt-0.5 shrink-0">{i + 1}</span>
+                        <div key={i} className="flex items-start gap-2">
+                          <span className="text-accent-blue font-black text-[11px] mt-0.5 shrink-0">{i + 1}</span>
                           <p className="text-text-secondary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{topic}</p>
                         </div>
                       ))
@@ -2210,67 +2210,67 @@ const StudySection: React.FC<{
   };
 
   return (
-    <section className="border-b border-border-light pb-16 mb-16 last:border-0 last:mb-0">
-      <div className="flex items-center justify-between mb-8">
+    <section className="border-b border-border-light pb-8 mb-8 last:border-0 last:mb-0">
+      <div className="flex items-center justify-between mb-4">
         <span className={`badge-archival bg-${accentColor}`}>{label}</span>
-        <div className="flex items-center gap-2">
-          <button onClick={() => onCopy(section.summary, `${type}-summary`)} className={`p-3 rounded-full transition-all border border-border-light hover:bg-bg-secondary shadow-subtle ${copiedId === `${type}-summary` ? 'text-accent-blue' : 'text-text-tertiary'}`}>
-            {copiedId === `${type}-summary` ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => onCopy(section.summary, `${type}-summary`)} className={`p-2 rounded-full transition-all border border-border-light hover:bg-bg-secondary shadow-subtle ${copiedId === `${type}-summary` ? 'text-accent-blue' : 'text-text-tertiary'}`}>
+            {copiedId === `${type}-summary` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
-          <button onClick={handleTTS} disabled={ttsLoading} className={`p-3 rounded-full transition-all border border-border-light hover:bg-bg-secondary shadow-subtle ${isPlaying ? `text-accent-blue` : `text-text-tertiary`} ${ttsLoading ? 'opacity-50' : ''}`}>
-            {ttsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isPlaying ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          <button onClick={handleTTS} disabled={ttsLoading} className={`p-2 rounded-full transition-all border border-border-light hover:bg-bg-secondary shadow-subtle ${isPlaying ? `text-accent-blue` : `text-text-tertiary`} ${ttsLoading ? 'opacity-50' : ''}`}>
+            {ttsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : isPlaying ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
 
-      <h2 className="text-2xl font-black text-text-primary mb-8 tracking-tighter serif-text flex items-baseline justify-between">
+      <h2 className="text-lg font-black text-text-primary mb-4 tracking-tighter serif-text flex items-baseline justify-between">
         {section.range}
-        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest px-2 py-0.5">Easy Bible</span>
+        <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest px-2 py-0.5">Easy Bible</span>
       </h2>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {section.background && (
-          <div className="bg-bg-secondary rounded-xl border border-border-light overflow-hidden shadow-subtle">
-            <button onClick={() => setShowBackground(!showBackground)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-paper">
-              <Info className={`w-4 h-4 text-accent-blue shrink-0`} />
-              <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">역사적 배경</h4>
-              <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showBackground ? 'rotate-180' : ''}`} />
+          <div className="bg-bg-secondary rounded-lg border border-border-light overflow-hidden shadow-subtle">
+            <button onClick={() => setShowBackground(!showBackground)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-paper">
+              <Info className={`w-3.5 h-3.5 text-accent-blue shrink-0`} />
+              <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">역사적 배경</h4>
+              <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showBackground ? 'rotate-180' : ''}`} />
             </button>
             {showBackground && (
-              <div className="px-6 pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="px-4 pb-4 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
                 <p className="text-text-secondary leading-loose serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{section.background}</p>
               </div>
             )}
           </div>
         )}
 
-        <div className={`bg-bg-paper rounded-xl border border-border-light shadow-card overflow-hidden`}>
-          <button onClick={() => setShowSummary(!showSummary)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-secondary">
-            <BookText className={`w-4 h-4 text-accent-blue shrink-0`} />
-            <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">핵심 요약</h4>
-            <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showSummary ? 'rotate-180' : ''}`} />
+        <div className={`bg-bg-paper rounded-lg border border-border-light shadow-card overflow-hidden`}>
+          <button onClick={() => setShowSummary(!showSummary)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
+            <BookText className={`w-3.5 h-3.5 text-accent-blue shrink-0`} />
+            <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">핵심 요약</h4>
+            <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showSummary ? 'rotate-180' : ''}`} />
           </button>
           {showSummary && (
-            <div className="px-6 pb-6 pt-0 animate-in fade-in duration-300">
+            <div className="px-4 pb-4 pt-0 animate-in fade-in duration-300">
               <p className="text-text-primary leading-loose serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{section.summary}</p>
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {section.figures && section.figures.length > 0 && (
-            <div className="bg-bg-primary border border-border-light rounded-xl overflow-hidden shadow-subtle">
-              <button onClick={() => setShowFigures(!showFigures)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-secondary">
-                <Users className={`w-4 h-4 text-accent-green shrink-0`} />
-                <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">주요 인물</h4>
-                <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showFigures ? 'rotate-180' : ''}`} />
+            <div className="bg-bg-primary border border-border-light rounded-lg overflow-hidden shadow-subtle">
+              <button onClick={() => setShowFigures(!showFigures)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
+                <Users className={`w-3.5 h-3.5 text-accent-green shrink-0`} />
+                <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">주요 인물</h4>
+                <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showFigures ? 'rotate-180' : ''}`} />
               </button>
               {showFigures && (
-                <div className="px-6 pb-6 pt-0 space-y-4 animate-in fade-in duration-300">
+                <div className="px-4 pb-4 pt-0 space-y-3 animate-in fade-in duration-300">
                   {section.figures.map((f: any, i: number) => (
-                    <div key={i} className="border-l-2 border-border-light pl-4 py-1">
-                      <span className="font-black text-xs text-text-primary uppercase tracking-tight">{f.name}</span>
-                      <p className="text-text-tertiary leading-relaxed mt-1" style={{ fontSize: `${fontSize - 3}px` }}>{f.description}</p>
+                    <div key={i} className="border-l-2 border-border-light pl-3 py-0.5">
+                      <span className="font-black text-[11px] text-text-primary uppercase tracking-tight">{f.name}</span>
+                      <p className="text-text-tertiary leading-relaxed mt-0.5" style={{ fontSize: `${fontSize - 3}px` }}>{f.description}</p>
                     </div>
                   ))}
                 </div>
@@ -2279,18 +2279,18 @@ const StudySection: React.FC<{
           )}
 
           {section.vocabulary && section.vocabulary.length > 0 && (
-            <div className="bg-bg-primary border border-border-light rounded-xl overflow-hidden shadow-subtle">
-              <button onClick={() => setShowVocabulary(!showVocabulary)} className="w-full flex items-center gap-4 p-5 text-left transition-colors hover:bg-bg-secondary">
-                <Languages className={`w-4 h-4 text-accent-yellow shrink-0`} />
-                <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">용어 사전</h4>
-                <ChevronDown className={`w-4 h-4 text-text-tertiary transition-transform duration-300 ${showVocabulary ? 'rotate-180' : ''}`} />
+            <div className="bg-bg-primary border border-border-light rounded-lg overflow-hidden shadow-subtle">
+              <button onClick={() => setShowVocabulary(!showVocabulary)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
+                <Languages className={`w-3.5 h-3.5 text-accent-yellow shrink-0`} />
+                <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">용어 사전</h4>
+                <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showVocabulary ? 'rotate-180' : ''}`} />
               </button>
               {showVocabulary && (
-                <div className="px-6 pb-6 pt-0 space-y-4 animate-in fade-in duration-300">
+                <div className="px-4 pb-4 pt-0 space-y-3 animate-in fade-in duration-300">
                   {section.vocabulary.map((v: any, i: number) => (
-                    <div key={i} className="border-l-2 border-border-light pl-4 py-1">
-                      <span className="font-black text-xs text-accent-yellow uppercase tracking-tighter">{v.word}</span>
-                      <p className="text-text-tertiary leading-relaxed mt-1" style={{ fontSize: `${fontSize - 3}px` }}>{v.meaning}</p>
+                    <div key={i} className="border-l-2 border-border-light pl-3 py-0.5">
+                      <span className="font-black text-[11px] text-accent-yellow uppercase tracking-tighter">{v.word}</span>
+                      <p className="text-text-tertiary leading-relaxed mt-0.5" style={{ fontSize: `${fontSize - 3}px` }}>{v.meaning}</p>
                     </div>
                   ))}
                 </div>
@@ -2300,11 +2300,11 @@ const StudySection: React.FC<{
         </div>
       </div>
 
-      <div className="flex gap-3 mt-10">
-        <button onClick={onExegesis} className="flex-1 btn-analogue bg-accent-black text-white py-3 shadow-card text-[9px]">
+      <div className="flex gap-2 mt-5">
+        <button onClick={onExegesis} className="flex-1 btn-analogue bg-accent-black text-white py-2.5 shadow-card text-[9px]">
           <BookText className="w-3.5 h-3.5" /> 해설 보기
         </button>
-        <button onClick={() => setShowNote(true)} className={`flex-1 btn-analogue py-3 shadow-card text-[9px] ${note ? 'bg-bg-paper border-accent-blue text-accent-blue' : 'bg-bg-primary border-border-light text-text-tertiary hover:border-accent-black hover:text-accent-black'}`}>
+        <button onClick={() => setShowNote(true)} className={`flex-1 btn-analogue py-2.5 shadow-card text-[9px] ${note ? 'bg-bg-paper border-accent-blue text-accent-blue' : 'bg-bg-primary border-border-light text-text-tertiary hover:border-accent-black hover:text-accent-black'}`}>
           <PenLine className="w-3.5 h-3.5" /> {note ? '노트 수정' : '노트 작성'}
         </button>
       </div>
