@@ -43,7 +43,8 @@ import {
   Underline
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
-import { fetchDailyReflection, streamDetailedExegesis, streamFullBibleText, getDeepReflection, playTTS, fetchWordMeaning } from './services/geminiService';
+import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS, fetchWordMeaning, generateSimplifiedVerses } from './services/geminiService';
+import { fetchBibleText } from './services/bibleApi';
 import { loadPlan, savePlan, loadHistory, markDatesStatus, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
 
 const APP_PASSWORD = '0516';
@@ -1404,6 +1405,8 @@ const App: React.FC = () => {
   const [askContext, setAskContext] = useState<{ text: string; source: string } | null>(null);
   const [streamingExegesis, setStreamingExegesis] = useState<{ range: string; version: string; items: ExegesisItem[]; done: boolean } | null>(null);
   const [fullBibleText, setFullBibleText] = useState<{ range: string; version: string; verses: BibleVerse[]; done: boolean } | null>(null);
+  const [simpleTexts, setSimpleTexts] = useState<Record<string, string> | null>(null);
+  const [simpleTextsLoading, setSimpleTextsLoading] = useState(false);
   const [currentView, setCurrentView] = useState<'home' | 'reading'>('home');
   const [showJournal, setShowJournal] = useState(false);
   const [medSaveFlash, setMedSaveFlash] = useState(false);
@@ -1480,7 +1483,10 @@ const App: React.FC = () => {
     (() => { try { const s = localStorage.getItem('bible_exegesis_cache'); return s ? JSON.parse(s) : {}; } catch { return {}; } })()
   );
   const fullBibleTextCacheRef = useRef<Record<string, BibleVerse[]>>(
-    (() => { try { const s = localStorage.getItem('bible_fulltext_cache'); return s ? JSON.parse(s) : {}; } catch { return {}; } })()
+    (() => { try { const s = localStorage.getItem('bible_fulltext_cache_krv'); return s ? JSON.parse(s) : {}; } catch { return {}; } })()
+  );
+  const simpleTextCacheRef = useRef<Record<string, Record<string, string>>>(
+    (() => { try { const s = localStorage.getItem('bible_simple_cache'); return s ? JSON.parse(s) : {}; } catch { return {}; } })()
   );
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -1632,22 +1638,34 @@ const App: React.FC = () => {
     const cacheKey = data.range;
     const cachedExegesis = exegesisCacheRef.current[cacheKey];
     const cachedFullText = fullBibleTextCacheRef.current[cacheKey];
+    const cachedSimple = simpleTextCacheRef.current[cacheKey];
 
     // Cache hit: show cached data immediately
     if (cachedExegesis && cachedFullText) {
-      setStreamingExegesis({ range: data.range, version: '쉬운성경', items: cachedExegesis, done: true });
-      setFullBibleText({ range: data.range, version: '쉬운성경', verses: cachedFullText, done: true });
+      setStreamingExegesis({ range: data.range, version: '개역한글', items: cachedExegesis, done: true });
+      setFullBibleText({ range: data.range, version: '개역한글', verses: cachedFullText, done: true });
+      setSimpleTexts(cachedSimple || null);
+      if (!cachedSimple) {
+        setSimpleTextsLoading(true);
+        generateSimplifiedVerses(cachedFullText, data.range).then(result => {
+          setSimpleTexts(result);
+          simpleTextCacheRef.current[cacheKey] = result;
+          try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
+        }).catch(() => {}).finally(() => setSimpleTextsLoading(false));
+      }
       return;
     }
 
-    setStreamingExegesis({ range: data.range, version: '쉬운성경', items: [], done: false });
-    setFullBibleText({ range: data.range, version: '쉬운성경', verses: [], done: false });
+    setStreamingExegesis({ range: data.range, version: '개역한글', items: [], done: false });
+    setFullBibleText({ range: data.range, version: '개역한글', verses: [], done: false });
+    setSimpleTexts(cachedSimple || null);
+    if (cachedSimple) setSimpleTextsLoading(false); else setSimpleTextsLoading(true);
 
     const collectedVerses: BibleVerse[] = [];
     const collectedItems: ExegesisItem[] = [];
 
     // Stream full text in parallel
-    streamFullBibleText(
+    fetchBibleText(
       data.range,
       (verse) => {
         collectedVerses.push(verse);
@@ -1659,9 +1677,18 @@ const App: React.FC = () => {
     ).then(() => {
       setFullBibleText(prev => prev ? { ...prev, done: true } : prev);
       fullBibleTextCacheRef.current[cacheKey] = collectedVerses;
-      try { localStorage.setItem('bible_fulltext_cache', JSON.stringify(fullBibleTextCacheRef.current)); } catch {}
+      try { localStorage.setItem('bible_fulltext_cache_krv', JSON.stringify(fullBibleTextCacheRef.current)); } catch {}
+      // Generate simplified texts after full text is loaded
+      if (!cachedSimple) {
+        generateSimplifiedVerses(collectedVerses, data.range).then(result => {
+          setSimpleTexts(result);
+          simpleTextCacheRef.current[cacheKey] = result;
+          try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
+        }).catch(() => {}).finally(() => setSimpleTextsLoading(false));
+      }
     }).catch(() => {
       setFullBibleText(prev => prev ? { ...prev, done: true } : prev);
+      setSimpleTextsLoading(false);
     });
 
     // Stream exegesis in parallel
@@ -2168,7 +2195,7 @@ const App: React.FC = () => {
         <ExegesisOverlay
           data={streamingExegesis || { range: fullBibleText!.range, version: fullBibleText!.version, items: [], done: true }}
           isStreaming={streamingExegesis ? !streamingExegesis.done : false}
-          onClose={() => { setStreamingExegesis(null); setFullBibleText(null); }}
+          onClose={() => { setStreamingExegesis(null); setFullBibleText(null); setSimpleTexts(null); setSimpleTextsLoading(false); }}
           fontSize={fontSize}
           titleFontSize={titleFontSize}
           onCopy={handleCopyText}
@@ -2178,6 +2205,8 @@ const App: React.FC = () => {
           fullText={fullBibleText}
           onSaveWord={handleSaveWord}
           onRemoveWord={(word) => handleDeleteWord(toLocalDateStr(selectedDate), word)}
+          simpleTexts={simpleTexts}
+          simpleTextsLoading={simpleTextsLoading}
         />
       )}
 
@@ -2419,8 +2448,10 @@ const ExegesisOverlay: React.FC<{
   onAsk: (text: string, source: string) => void,
   fullText: { range: string; version: string; verses: BibleVerse[]; done: boolean } | null,
   onSaveWord: (word: string, meaning: string) => void,
-  onRemoveWord: (word: string) => void
-}> = ({ data, isStreaming, onClose, fontSize, titleFontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord }) => {
+  onRemoveWord: (word: string) => void,
+  simpleTexts: Record<string, string> | null,
+  simpleTextsLoading: boolean
+}> = ({ data, isStreaming, onClose, fontSize, titleFontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord, simpleTexts, simpleTextsLoading }) => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'fulltext' | 'exegesis'>('fulltext');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -2697,7 +2728,7 @@ const ExegesisOverlay: React.FC<{
         <div>
           <h3 className="font-black text-text-primary serif-text uppercase tracking-tighter" style={{ fontSize: `${titleFontSize + 4}px` }}>{data.range}</h3>
           <div className="flex items-center gap-2 mt-1">
-            <span className="badge-archival bg-accent-blue">쉬운성경</span>
+            <span className="badge-archival bg-accent-blue">개역한글</span>
           </div>
         </div>
         <button onClick={onClose} className="p-2 hover:bg-bg-secondary rounded-full transition-colors"><X className="w-4 h-4 text-text-tertiary" /></button>
@@ -2775,6 +2806,11 @@ const ExegesisOverlay: React.FC<{
                             </span>
                           )}
                         </p>
+                        {simpleTexts && simpleTexts[verse.verseNum] ? (
+                          <p className="text-text-tertiary text-[12px] leading-relaxed mt-1">{simpleTexts[verse.verseNum]}</p>
+                        ) : simpleTextsLoading ? (
+                          <p className="text-text-tertiary text-[11px] leading-relaxed mt-1 animate-pulse opacity-40">쉬운 설명 생성 중...</p>
+                        ) : null}
                       </div>
                     </div>
                   ))}
