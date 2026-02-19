@@ -1176,11 +1176,18 @@ const Dashboard: React.FC<{
 
   return (
     <div className="p-5 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="text-center space-y-1">
-        <h2 className="text-lg font-black text-text-primary serif-text uppercase tracking-tighter">Mission Progress</h2>
-        <p className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">
-          {effectiveDayDiff >= 0 ? `Active Phase: ${String(effectiveDayDiff + 1).padStart(3, '0')}` : 'Mission Pending'}
-        </p>
+      <div className="relative flex items-center justify-center py-8 overflow-hidden rounded-2xl" style={{ background: '#F4F5F8' }}>
+        <svg viewBox="0 0 400 320" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+          <path d="M200,30 C280,25 350,80 355,160 C360,240 300,300 210,295 C120,290 50,240 48,160 C46,80 120,35 200,30Z" fill="#D8DCE6" opacity="0.6" />
+          <path d="M205,60 C270,55 325,100 328,170 C331,240 280,280 210,276 C140,272 85,230 83,165 C81,100 140,65 205,60Z" fill="#B0B8C8" opacity="0.5" />
+          <circle cx="205" cy="165" r="80" fill="#4A5D74" opacity="0.75" />
+        </svg>
+        <div className="relative z-10 text-center space-y-1">
+          <h2 className="text-lg font-black text-text-primary serif-text uppercase tracking-tighter">Mission Progress</h2>
+          <p className="text-[9px] font-black text-text-tertiary uppercase tracking-widest">
+            {effectiveDayDiff >= 0 ? `Active Phase: ${String(effectiveDayDiff + 1).padStart(3, '0')}` : 'Mission Pending'}
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4">
