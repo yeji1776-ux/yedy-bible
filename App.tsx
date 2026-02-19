@@ -94,18 +94,31 @@ const SettingsPanel: React.FC<{
   onLogout: () => void;
 }> = ({ fontSize, titleFontSize, onFontSizeChange, onTitleFontSizeChange, onEditPlan, onReset, onClose, krFont, enFont, themeIdx, onKrFont, onEnFont, onTheme, onLogout }) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [groupOpen, setGroupOpen] = useState(false);
   const toggle = (key: string) => setOpenSection(prev => prev === key ? null : key);
 
   return (
   <div className="fixed inset-0 z-50 bg-accent-black/40 backdrop-blur-sm flex items-end justify-center animate-in fade-in duration-200" onClick={onClose}>
     <div className="bg-bg-primary w-full max-w-2xl rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
       <div className="w-12 h-1 bg-border-light rounded-full mx-auto mb-6" />
-      <div className="flex items-center gap-3 mb-6">
-        <Settings className="w-5 h-5 text-accent-black" />
-        <h3 className="text-lg font-black text-text-primary tracking-tight">설정</h3>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Settings className="w-5 h-5 text-accent-black" />
+          <h3 className="text-lg font-black text-text-primary tracking-tight">설정</h3>
+        </div>
+        <button onClick={onClose} className="p-1.5 hover:bg-bg-secondary rounded-lg transition-colors"><X className="w-4 h-4 text-text-tertiary" /></button>
       </div>
 
       <div className="space-y-2 mb-6">
+        {/* 폰트 & 테마 그룹 */}
+        <button onClick={() => setGroupOpen(prev => !prev)} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
+          <div className="flex items-center gap-2">
+            <Palette className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-primary">폰트 & 테마</span>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform ${groupOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {groupOpen && <div className="space-y-2 pl-2 border-l-2 border-border-light ml-2">
         {/* 제목 크기 */}
         <button onClick={() => toggle('titleSize')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
           <div className="flex items-center gap-2">
@@ -230,14 +243,8 @@ const SettingsPanel: React.FC<{
             ))}
           </div>
         )}
+        </div>}
       </div>
-
-      <button
-        onClick={onClose}
-        className="w-full bg-accent-black text-white py-4 rounded-full font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-2 mb-6"
-      >
-        <Check className="w-4 h-4" /> 저장하고 닫기
-      </button>
 
       <div className="space-y-3 pt-4 border-t border-border-light">
         <button
@@ -255,8 +262,8 @@ const SettingsPanel: React.FC<{
           <Share2 className="w-3.5 h-3.5" /> 앱 주소 공유하기
         </button>
         {onEditPlan && (
-          <button onClick={() => { onEditPlan(); onClose(); }} className="btn-analogue w-full flex items-center justify-center gap-2 hover:bg-accent-black hover:text-white transition-all">
-            <Edit2 className="w-4 h-4" /> 통독 계획 수정
+          <button onClick={() => { onEditPlan(); onClose(); }} className="w-full py-3.5 rounded-full font-bold text-[10px] flex items-center justify-center gap-2 uppercase tracking-widest transition-all hover:opacity-80" style={{ background: '#EDF1F4', color: '#2C3E50' }}>
+            <Edit2 className="w-3.5 h-3.5" /> 통독 계획 수정
           </button>
         )}
         <button
@@ -1240,8 +1247,18 @@ const ChatPanel: React.FC<{
   ntRange: string;
   reflection: DailyReflection | null;
   onClose: () => void;
-}> = ({ otRange, ntRange, reflection, onClose }) => {
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  dateStr: string;
+}> = ({ otRange, ntRange, reflection, onClose, dateStr }) => {
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>(() => {
+    try {
+      const stored = localStorage.getItem('bible_chat_history');
+      if (stored) {
+        const all = JSON.parse(stored);
+        return all[dateStr] || [];
+      }
+    } catch {}
+    return [];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1249,6 +1266,23 @@ const ChatPanel: React.FC<{
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('bible_chat_history');
+      const all = stored ? JSON.parse(stored) : {};
+      if (messages.length > 0) {
+        all[dateStr] = messages;
+      } else {
+        delete all[dateStr];
+      }
+      localStorage.setItem('bible_chat_history', JSON.stringify(all));
+    } catch {}
+  }, [messages, dateStr]);
+
+  const handleClearChat = () => {
+    setMessages([]);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -1275,11 +1309,18 @@ const ChatPanel: React.FC<{
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-black tracking-tight" style={{ color: 'rgba(255,255,255,0.85)' }}>Hare 챗봇</h3>
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>오늘 읽은 말씀에 대해 질문하세요</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{dateStr} — 오늘 읽은 말씀에 대해 질문하세요</p>
             </div>
-            <button onClick={onClose} className="p-2 rounded-full transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}>
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <button onClick={handleClearChat} className="p-2 rounded-full transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              <button onClick={onClose} className="p-2 rounded-full transition-colors" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1410,8 +1451,8 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'home' | 'reading'>('home');
   const [showJournal, setShowJournal] = useState(false);
   const [medSaveFlash, setMedSaveFlash] = useState(false);
-  const [journalTab, setJournalTab] = useState<'meditation' | 'otNotes' | 'ntNotes'>('meditation');
-  const [journalDeleteConfirm, setJournalDeleteConfirm] = useState<{ type: 'meditation' | 'otNote' | 'ntNote'; dateStr: string; label: string } | null>(null);
+  const [journalTab, setJournalTab] = useState<'meditation' | 'otNotes' | 'ntNotes' | 'prayers'>('meditation');
+  const [journalDeleteConfirm, setJournalDeleteConfirm] = useState<{ type: 'meditation' | 'otNote' | 'ntNote' | 'prayer'; dateStr: string; label: string } | null>(null);
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -1474,6 +1515,19 @@ const App: React.FC = () => {
     setSavedMeditations(prev => {
       const next = { ...prev, [dateStr]: text };
       localStorage.setItem('bible_saved_meditations', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const [savedPrayers, setSavedPrayers] = useState<Record<string, string>>(() => {
+    try { const s = localStorage.getItem('bible_personal_prayers'); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  const [prayerSaveFlash, setPrayerSaveFlash] = useState(false);
+  const handleSavePrayer = (text: string) => {
+    const dateStr = toLocalDateStr(selectedDate);
+    setSavedPrayers(prev => {
+      const next = { ...prev, [dateStr]: text };
+      localStorage.setItem('bible_personal_prayers', JSON.stringify(next));
       return next;
     });
   };
@@ -1832,9 +1886,9 @@ const App: React.FC = () => {
       ) : (
         <main className="p-4 space-y-6">
           {aiState.loading && !reflection ? (
-            <div className="py-32 flex flex-col items-center justify-center space-y-5">
-              <Loader2 className="w-12 h-12 text-accent-black animate-spin" />
-              <p className="text-text-tertiary font-bold text-sm">말씀을 준비하고 있습니다...</p>
+            <div className="py-24 flex flex-col items-center justify-center space-y-4">
+              <Loader2 className="w-8 h-8 text-text-tertiary/50 animate-spin" />
+              <p className="text-text-tertiary/60 font-bold text-xs">말씀을 준비하고 있습니다...</p>
             </div>
           ) : aiState.error ? (
             <div className="py-20 flex flex-col items-center justify-center text-center">
@@ -1916,6 +1970,28 @@ const App: React.FC = () => {
                       <p className="text-text-tertiary text-xs">기도제목을 불러오는 중...</p>
                     )}
                   </div>
+                  <div className="mt-4 pt-3 border-t border-border-light">
+                    <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-2">나만의 기도제목</p>
+                    <textarea
+                      value={savedPrayers[toLocalDateStr(selectedDate)] || ''}
+                      onChange={e => handleSavePrayer(e.target.value)}
+                      placeholder="나만의 기도제목을 적어보세요..."
+                      className="w-full bg-bg-paper border border-border-light rounded-lg p-3 text-text-secondary leading-relaxed resize-none focus:border-accent-blue focus:outline-none transition-colors serif-text text-xs"
+                      rows={2}
+                      style={{ fontSize: `${fontSize - 2}px` }}
+                    />
+                    <button
+                      onClick={() => {
+                        handleSavePrayer(savedPrayers[toLocalDateStr(selectedDate)] || '');
+                        setPrayerSaveFlash(true);
+                        setTimeout(() => setPrayerSaveFlash(false), 1500);
+                      }}
+                      disabled={!savedPrayers[toLocalDateStr(selectedDate)]?.trim()}
+                      className={`mt-2 w-full py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${prayerSaveFlash ? 'bg-accent-green text-white' : 'bg-accent-black text-white hover:opacity-90'} disabled:opacity-30 disabled:cursor-not-allowed`}
+                    >
+                      {prayerSaveFlash ? '저장 완료' : '저장'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1939,7 +2015,7 @@ const App: React.FC = () => {
             <button onClick={() => setShowJournal(false)} className="p-1.5 hover:bg-bg-secondary rounded-lg transition-colors"><X className="w-4 h-4 text-text-tertiary" /></button>
           </div>
           <div className="flex gap-2 px-5 pb-3">
-            {([['meditation', '묵상'], ['otNotes', '구약 노트'], ['ntNotes', '신약 노트']] as const).map(([key, label]) => (
+            {([['meditation', '묵상'], ['otNotes', '구약 노트'], ['ntNotes', '신약 노트'], ['prayers', '기도제목']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setJournalTab(key)}
@@ -2054,6 +2130,52 @@ const App: React.FC = () => {
             );
           })()}
 
+          {/* Prayers tab */}
+          {journalTab === 'prayers' && (() => {
+            const prayerEntries = (Object.entries(savedPrayers) as [string, string][])
+              .filter(([, text]) => text.trim())
+              .sort(([a], [b]) => b.localeCompare(a));
+            if (prayerEntries.length === 0) return (
+              <div className="py-24 text-center">
+                <Heart className="w-10 h-10 text-text-tertiary opacity-20 mx-auto mb-6" />
+                <p className="text-xs font-black text-text-tertiary uppercase tracking-widest leading-loose">아직 작성한 기도제목이 없습니다.<br/>읽기 탭에서 기도제목을 작성해보세요.</p>
+              </div>
+            );
+            return (
+              <div className="space-y-4">
+                {prayerEntries.map(([dateStr, text]) => {
+                  const d = new Date(dateStr + 'T00:00:00');
+                  const cached = reflectionCacheRef.current[dateStr];
+                  return (
+                    <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-6 shadow-subtle">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
+                          {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); }} className="text-[8px] font-black text-accent-blue px-2 py-1 rounded border border-accent-blue/30 hover:bg-accent-blue/5 transition-colors">이동</button>
+                          <button onClick={() => setJournalDeleteConfirm({ type: 'prayer', dateStr, label: d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) })} className="text-text-tertiary hover:text-accent-red transition-colors p-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {cached?.prayer_topics && cached.prayer_topics.length > 0 && (
+                        <div className="mb-3 space-y-1">
+                          <p className="text-[10px] font-black text-accent-blue uppercase tracking-widest mb-1">AI 기도제목</p>
+                          {cached.prayer_topics.map((topic: string, i: number) => (
+                            <p key={i} className="text-[11px] text-text-tertiary leading-relaxed">{i + 1}. {topic}</p>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-[10px] font-black text-text-tertiary uppercase tracking-widest mb-1">나의 기도제목</p>
+                      <p className="text-text-primary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {/* NT Notes tab */}
           {journalTab === 'ntNotes' && (() => {
             type NoteEntry = { old?: string; new?: string; oldRange?: string; newRange?: string };
@@ -2149,6 +2271,13 @@ const App: React.FC = () => {
                       localStorage.setItem('bible_saved_notes', JSON.stringify(next));
                       return next;
                     });
+                  } else if (type === 'prayer') {
+                    setSavedPrayers(prev => {
+                      const next = { ...prev };
+                      delete next[dateStr];
+                      localStorage.setItem('bible_personal_prayers', JSON.stringify(next));
+                      return next;
+                    });
                   }
                   setJournalDeleteConfirm(null);
                 }} className="flex-1 py-2.5 rounded-lg text-[10px] font-black text-white bg-accent-red hover:opacity-90 transition-all">삭제</button>
@@ -2222,6 +2351,7 @@ const App: React.FC = () => {
           ntRange={todayNtRange}
           reflection={reflection}
           onClose={() => setShowChat(false)}
+          dateStr={toLocalDateStr(selectedDate)}
         />
       )}
 
@@ -2253,13 +2383,11 @@ const App: React.FC = () => {
       )}
 
       {aiState.loading && (
-        <div className="fixed inset-0 z-[60] bg-bg-primary/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-bg-primary p-10 rounded-2xl border border-border-light shadow-card flex flex-col items-center">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-6 animate-spin" style={{ background: '#F0F1F4' }}>
-              <svg viewBox="0 0 512 512" className="w-10 h-10"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
-            </div>
-            <p className="text-text-primary font-black text-xs uppercase tracking-widest">깊이 살피는 중...</p>
+        <div className="fixed inset-0 z-[60] bg-bg-primary/60 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 animate-spin" style={{ background: 'rgba(240,241,244,0.6)' }}>
+            <svg viewBox="0 0 512 512" className="w-8 h-8 opacity-70"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
           </div>
+          <p className="text-text-tertiary font-black text-[10px] uppercase tracking-widest">깊이 살피는 중...</p>
         </div>
       )}
     </div>
@@ -2496,9 +2624,13 @@ const ExegesisOverlay: React.FC<{
     const container = range.startContainer.parentElement?.closest('[data-highlightable]');
     if (!container) return;
     const selectedText = sel.toString().trim();
-    if (!selectedText || selectedText.length < 2) return;
-    const startIdx = explanation.indexOf(selectedText);
-    if (startIdx === -1) return;
+    if (!selectedText || selectedText.length < 1) return;
+    let startIdx = explanation.indexOf(selectedText);
+    if (startIdx === -1) {
+      const normalized = selectedText.replace(/\s+/g, ' ');
+      startIdx = explanation.indexOf(normalized);
+      if (startIdx === -1) return;
+    }
     const endIdx = startIdx + selectedText.length;
     const existing = highlights[cardKey] || [];
     const overlaps = existing.some(h => !(endIdx <= h.start || startIdx >= h.end));
@@ -2600,16 +2732,9 @@ const ExegesisOverlay: React.FC<{
 
       if (seg.type === 'pending') {
         parts.push(
-          <span key="pending" className="relative inline">
+          <span key="pending" className="inline">
             <span style={{ borderBottom: '2px dashed var(--color-accent-blue)', background: 'rgba(59,130,246,0.06)', paddingBottom: '1px' }}>
               {text.slice(segStart, segEnd)}
-            </span>
-            <span className="absolute left-0 top-full mt-1 z-30 animate-in fade-in duration-150">
-              <span className="inline-flex items-center gap-0 bg-bg-primary border border-border-light shadow-md rounded-md overflow-hidden whitespace-nowrap">
-                <button onClick={(e) => { e.stopPropagation(); confirmUnderline(); }} className="px-3 py-1.5 text-[9px] font-black text-text-primary hover:bg-bg-secondary transition-colors border-r border-border-light">밑줄</button>
-                <button onClick={(e) => { e.stopPropagation(); confirmUnderlineWithMemo(); }} className="px-3 py-1.5 text-[9px] font-black text-accent-blue hover:bg-bg-secondary transition-colors border-r border-border-light">밑줄+말풍선</button>
-                <button onClick={(e) => { e.stopPropagation(); setPendingSelect(null); }} className="px-3 py-1.5 text-[9px] font-black text-text-tertiary hover:bg-bg-secondary transition-colors">취소</button>
-              </span>
             </span>
           </span>
         );
@@ -2930,6 +3055,20 @@ const ExegesisOverlay: React.FC<{
             </div>
           )}
         </>
+      )}
+
+      {pendingSelect && (
+        <div className="shrink-0 border-t border-border-light bg-bg-primary px-8 py-4 flex items-center justify-between animate-in fade-in slide-in-from-bottom duration-300 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
+          <div className="flex items-center gap-3">
+            <Underline className="w-4 h-4 text-accent-blue" />
+            <span className="text-xs font-black text-accent-blue bg-bg-paper px-2 py-0.5 rounded border border-border-light truncate max-w-[120px]">"{pendingSelect.text}"</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPendingSelect(null)} className="px-3 py-1.5 text-[10px] font-black text-text-tertiary hover:text-accent-black transition-colors uppercase tracking-widest">취소</button>
+            <button onClick={confirmUnderline} className="px-4 py-2 text-[10px] font-black text-white bg-accent-black rounded-lg hover:opacity-90 transition-all">밑줄</button>
+            <button onClick={confirmUnderlineWithMemo} className="px-4 py-2 text-[10px] font-black text-accent-blue bg-bg-paper border border-accent-blue/30 rounded-lg hover:bg-accent-blue/5 transition-all">밑줄+메모</button>
+          </div>
+        </div>
       )}
 
     </div>

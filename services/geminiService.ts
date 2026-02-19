@@ -262,12 +262,12 @@ export async function getDeepReflection(
   return withRetry(async () => {
     const response = await client.chat.completions.create({
       model: "gpt-4.1-nano",
-      max_tokens: 1500,
+      max_tokens: 600,
       messages: [
         {
           role: "system",
           content:
-            "당신은 성경 학자이자 목회자입니다. 깊은 신학적이고 실천적인 묵상을 한국어로 제공하세요.",
+            "당신은 성경 학자이자 목회자입니다. 간결하게 3-4문장으로 핵심만 답하세요. 깊은 신학적이고 실천적인 묵상을 한국어로 제공하세요.",
         },
         {
           role: "user",
