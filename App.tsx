@@ -48,6 +48,10 @@ import { loadPlan, savePlan, loadHistory, markDatesStatus, loadReflectionCache, 
 
 const APP_PASSWORD = '0516';
 
+function toLocalDateStr(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 const KR_FONTS = [
   { name: 'Pretendard', family: "'Pretendard', sans-serif", desc: '깔끔한 고딕' },
   { name: 'Noto Sans KR', family: "'Noto Sans KR', sans-serif", desc: '구글 기본 고딕' },
@@ -696,7 +700,7 @@ const SetupView: React.FC<{ currentPlan?: ReadingPlan | null, onSave: (p: Readin
   const [ntStart, setNtStart] = useState(currentPlan?.ntStartChapter || 1);
   const [otPerDay, setOtPerDay] = useState(currentPlan?.otChaptersPerDay || 2);
   const [ntPerDay, setNtPerDay] = useState(currentPlan?.ntChaptersPerDay || 1);
-  const [startDate, setStartDate] = useState(currentPlan?.startDate ? new Date(currentPlan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(currentPlan?.startDate ? toLocalDateStr(new Date(currentPlan.startDate)) : toLocalDateStr(new Date()));
 
   return (
     <div className="max-w-sm mx-auto p-4 animate-in fade-in zoom-in-95 duration-500">
@@ -830,7 +834,7 @@ const BookmarkPanel: React.FC<{
       range,
       verse,
       source: `${range} ${verse}`,
-      date: new Date(parseInt(hl.id)).toISOString().split('T')[0],
+      date: toLocalDateStr(new Date(parseInt(hl.id))),
       isFulltext: cardKey.startsWith('ft-'),
     }));
   }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
@@ -844,7 +848,7 @@ const BookmarkPanel: React.FC<{
   const sortedHlDates = Object.keys(hlByDate).sort((a, b) => b.localeCompare(a));
 
   const groupedBookmarks = bookmarks.reduce((acc: Record<string, BookmarkType[]>, bm) => {
-    const dateKey = bm.created_at ? new Date(bm.created_at).toISOString().split('T')[0] : 'unknown';
+    const dateKey = bm.created_at ? toLocalDateStr(new Date(bm.created_at)) : 'unknown';
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(bm);
     return acc;
@@ -1423,7 +1427,7 @@ const App: React.FC = () => {
     try { const s = localStorage.getItem('bible_saved_words'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const handleSaveWord = (word: string, meaning: string) => {
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(selectedDate);
     setSavedWords(prev => {
       const dayWords = prev[dateStr] || [];
       if (dayWords.some(w => w.word === word)) return prev;
@@ -1447,7 +1451,7 @@ const App: React.FC = () => {
     try { const s = localStorage.getItem('bible_saved_notes'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const handleSaveNote = (type: 'old' | 'new', note: string) => {
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(selectedDate);
     const rangeKey = type === 'old' ? 'oldRange' : 'newRange';
     const cached = reflectionCacheRef.current[dateStr];
     const range = type === 'old' ? cached?.old_testament?.range : cached?.new_testament?.range;
@@ -1463,7 +1467,7 @@ const App: React.FC = () => {
     try { const s = localStorage.getItem('bible_saved_meditations'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const handleSaveMeditation = (text: string) => {
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(selectedDate);
     setSavedMeditations(prev => {
       const next = { ...prev, [dateStr]: text };
       localStorage.setItem('bible_saved_meditations', JSON.stringify(next));
@@ -1472,6 +1476,12 @@ const App: React.FC = () => {
   };
 
   const reflectionCacheRef = useRef<Record<string, DailyReflection>>({});
+  const exegesisCacheRef = useRef<Record<string, ExegesisItem[]>>(
+    (() => { try { const s = localStorage.getItem('bible_exegesis_cache'); return s ? JSON.parse(s) : {}; } catch { return {}; } })()
+  );
+  const fullBibleTextCacheRef = useRef<Record<string, BibleVerse[]>>(
+    (() => { try { const s = localStorage.getItem('bible_fulltext_cache'); return s ? JSON.parse(s) : {}; } catch { return {}; } })()
+  );
   const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
@@ -1529,7 +1539,7 @@ const App: React.FC = () => {
 
   const fetchContent = useCallback(async () => {
     if (!plan || isEditingPlan) return;
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(selectedDate);
     if (reflectionCacheRef.current[dateStr]) {
       setReflection(reflectionCacheRef.current[dateStr]);
       setAiState(prev => ({ ...prev, loading: false, error: null }));
@@ -1618,13 +1628,29 @@ const App: React.FC = () => {
     if (!reflection) return;
     const data = type === 'old' ? reflection.old_testament : reflection.new_testament;
     if (!data) return;
+
+    const cacheKey = data.range;
+    const cachedExegesis = exegesisCacheRef.current[cacheKey];
+    const cachedFullText = fullBibleTextCacheRef.current[cacheKey];
+
+    // Cache hit: show cached data immediately
+    if (cachedExegesis && cachedFullText) {
+      setStreamingExegesis({ range: data.range, version: '쉬운성경', items: cachedExegesis, done: true });
+      setFullBibleText({ range: data.range, version: '쉬운성경', verses: cachedFullText, done: true });
+      return;
+    }
+
     setStreamingExegesis({ range: data.range, version: '쉬운성경', items: [], done: false });
     setFullBibleText({ range: data.range, version: '쉬운성경', verses: [], done: false });
+
+    const collectedVerses: BibleVerse[] = [];
+    const collectedItems: ExegesisItem[] = [];
 
     // Stream full text in parallel
     streamFullBibleText(
       data.range,
       (verse) => {
+        collectedVerses.push(verse);
         setFullBibleText(prev => prev ? { ...prev, verses: [...prev.verses, verse] } : prev);
       },
       (range, version) => {
@@ -1632,6 +1658,8 @@ const App: React.FC = () => {
       },
     ).then(() => {
       setFullBibleText(prev => prev ? { ...prev, done: true } : prev);
+      fullBibleTextCacheRef.current[cacheKey] = collectedVerses;
+      try { localStorage.setItem('bible_fulltext_cache', JSON.stringify(fullBibleTextCacheRef.current)); } catch {}
     }).catch(() => {
       setFullBibleText(prev => prev ? { ...prev, done: true } : prev);
     });
@@ -1641,6 +1669,7 @@ const App: React.FC = () => {
       await streamDetailedExegesis(
         data.range,
         (item) => {
+          collectedItems.push(item);
           setStreamingExegesis(prev => prev ? { ...prev, items: [...prev.items, item] } : prev);
         },
         (range, version) => {
@@ -1648,6 +1677,8 @@ const App: React.FC = () => {
         },
       );
       setStreamingExegesis(prev => prev ? { ...prev, done: true } : prev);
+      exegesisCacheRef.current[cacheKey] = collectedItems;
+      try { localStorage.setItem('bible_exegesis_cache', JSON.stringify(exegesisCacheRef.current)); } catch {}
     } catch (e: any) {
       setAiState(prev => ({ ...prev, error: "해설을 불러오지 못했습니다." }));
       setStreamingExegesis(null);
@@ -1730,7 +1761,7 @@ const App: React.FC = () => {
         onShowBookmarks={() => setShowBookmarks(true)}
         onShowChat={() => setShowChat(true)}
         onRefresh={() => {
-          const dateStr = selectedDate.toISOString().split('T')[0];
+          const dateStr = toLocalDateStr(selectedDate);
           delete reflectionCacheRef.current[dateStr];
           fetchContent();
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1790,7 +1821,7 @@ const App: React.FC = () => {
                   onCopy={handleCopyText}
                   copiedId={copiedId}
                   accentColor="accent-blue"
-                  note={(savedNotes[selectedDate.toISOString().split('T')[0]] || {}).old || ''}
+                  note={(savedNotes[toLocalDateStr(selectedDate)] || {}).old || ''}
                   onSaveNote={(n) => handleSaveNote('old', n)}
                 />
               )}
@@ -1804,7 +1835,7 @@ const App: React.FC = () => {
                   onCopy={handleCopyText}
                   copiedId={copiedId}
                   accentColor="accent-green"
-                  note={(savedNotes[selectedDate.toISOString().split('T')[0]] || {}).new || ''}
+                  note={(savedNotes[toLocalDateStr(selectedDate)] || {}).new || ''}
                   onSaveNote={(n) => handleSaveNote('new', n)}
                 />
               )}
@@ -1816,7 +1847,7 @@ const App: React.FC = () => {
                   </div>
                   <p className="text-text-primary font-bold leading-relaxed mb-3 serif-text" style={{ fontSize: `${fontSize - 3}px` }}>{reflection.meditation_question}</p>
                   <textarea
-                    value={savedMeditations[selectedDate.toISOString().split('T')[0]] || ''}
+                    value={savedMeditations[toLocalDateStr(selectedDate)] || ''}
                     onChange={e => handleSaveMeditation(e.target.value)}
                     placeholder="묵상 질문에 대한 나의 생각을 적어보세요..."
                     className="w-full bg-bg-paper border border-border-light rounded-lg p-3 text-text-secondary leading-relaxed resize-none focus:border-accent-blue focus:outline-none transition-colors serif-text text-xs"
@@ -1825,11 +1856,11 @@ const App: React.FC = () => {
                   />
                   <button
                     onClick={() => {
-                      handleSaveMeditation(savedMeditations[selectedDate.toISOString().split('T')[0]] || '');
+                      handleSaveMeditation(savedMeditations[toLocalDateStr(selectedDate)] || '');
                       setMedSaveFlash(true);
                       setTimeout(() => setMedSaveFlash(false), 1500);
                     }}
-                    disabled={!savedMeditations[selectedDate.toISOString().split('T')[0]]?.trim()}
+                    disabled={!savedMeditations[toLocalDateStr(selectedDate)]?.trim()}
                     className={`mt-2 w-full py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all ${medSaveFlash ? 'bg-accent-green text-white' : 'bg-accent-black text-white hover:opacity-90'} disabled:opacity-30 disabled:cursor-not-allowed`}
                   >
                     {medSaveFlash ? '저장 완료' : '저장'}
@@ -2146,7 +2177,7 @@ const App: React.FC = () => {
           onAsk={(text: string, source: string) => setAskContext({ text, source })}
           fullText={fullBibleText}
           onSaveWord={handleSaveWord}
-          onRemoveWord={(word) => handleDeleteWord(selectedDate.toISOString().split('T')[0], word)}
+          onRemoveWord={(word) => handleDeleteWord(toLocalDateStr(selectedDate), word)}
         />
       )}
 

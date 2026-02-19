@@ -85,7 +85,7 @@ export async function markDatesStatus(dates: string[], status: 'success' | 'fail
 export async function loadReflectionCache(): Promise<Record<string, DailyReflection>> {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const cutoff = thirtyDaysAgo.toISOString().split('T')[0];
+  const cutoff = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
   const { data } = await supabase.from('reflection_cache').select('date, data').gte('date', cutoff);
   if (!data) return {};
   const cache: Record<string, DailyReflection> = {};
