@@ -75,7 +75,9 @@ const VINTAGE_THEMES = [
 
 const SettingsPanel: React.FC<{
   fontSize: number;
+  titleFontSize: number;
   onFontSizeChange: (size: number) => void;
+  onTitleFontSizeChange: (size: number) => void;
   onEditPlan?: () => void;
   onReset: () => void;
   onClose: () => void;
@@ -86,7 +88,7 @@ const SettingsPanel: React.FC<{
   onEnFont: (i: number) => void;
   onTheme: (i: number) => void;
   onLogout: () => void;
-}> = ({ fontSize, onFontSizeChange, onEditPlan, onReset, onClose, krFont, enFont, themeIdx, onKrFont, onEnFont, onTheme, onLogout }) => {
+}> = ({ fontSize, titleFontSize, onFontSizeChange, onTitleFontSizeChange, onEditPlan, onReset, onClose, krFont, enFont, themeIdx, onKrFont, onEnFont, onTheme, onLogout }) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const toggle = (key: string) => setOpenSection(prev => prev === key ? null : key);
 
@@ -100,11 +102,32 @@ const SettingsPanel: React.FC<{
       </div>
 
       <div className="space-y-2 mb-6">
-        {/* 글자 크기 */}
+        {/* 제목 크기 */}
+        <button onClick={() => toggle('titleSize')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
+          <div className="flex items-center gap-2">
+            <TypeIcon className="w-4 h-4 text-text-tertiary" />
+            <span className="text-xs font-bold text-text-primary">제목 크기</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-text-tertiary">{titleFontSize}pt</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform ${openSection === 'titleSize' ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+        {openSection === 'titleSize' && (
+          <div className="flex items-center gap-4 bg-bg-secondary rounded-xl p-3 border border-border-light mx-2">
+            <button onClick={() => onTitleFontSizeChange(Math.max(12, titleFontSize - 1))} disabled={titleFontSize <= 12} className="w-8 h-8 flex items-center justify-center bg-bg-primary border border-border-light rounded-lg text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Minus className="w-3 h-3" /></button>
+            <div className="flex-1 text-center">
+              <span className="text-base font-mono font-black text-text-primary tabular-nums">{titleFontSize}pt</span>
+            </div>
+            <button onClick={() => onTitleFontSizeChange(Math.min(28, titleFontSize + 1))} disabled={titleFontSize >= 28} className="w-8 h-8 flex items-center justify-center bg-bg-primary border border-border-light rounded-lg text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Plus className="w-3 h-3" /></button>
+          </div>
+        )}
+
+        {/* 내용 크기 */}
         <button onClick={() => toggle('size')} className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border-light hover:border-border-medium transition-all">
           <div className="flex items-center gap-2">
             <TypeIcon className="w-4 h-4 text-text-tertiary" />
-            <span className="text-xs font-bold text-text-primary">글자 크기</span>
+            <span className="text-xs font-bold text-text-primary">내용 크기</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-text-tertiary">{fontSize}pt</span>
@@ -113,7 +136,7 @@ const SettingsPanel: React.FC<{
         </button>
         {openSection === 'size' && (
           <div className="flex items-center gap-4 bg-bg-secondary rounded-xl p-3 border border-border-light mx-2">
-            <button onClick={() => onFontSizeChange(Math.max(14, fontSize - 1))} disabled={fontSize <= 14} className="w-8 h-8 flex items-center justify-center bg-bg-primary border border-border-light rounded-lg text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Minus className="w-3 h-3" /></button>
+            <button onClick={() => onFontSizeChange(Math.max(12, fontSize - 1))} disabled={fontSize <= 12} className="w-8 h-8 flex items-center justify-center bg-bg-primary border border-border-light rounded-lg text-text-secondary hover:border-accent-black transition-all disabled:opacity-30"><Minus className="w-3 h-3" /></button>
             <div className="flex-1 text-center">
               <span className="text-base font-mono font-black text-text-primary tabular-nums">{fontSize}pt</span>
             </div>
@@ -1366,6 +1389,7 @@ const App: React.FC = () => {
   const [reflection, setReflection] = useState<DailyReflection | null>(null);
   const [aiState, setAiState] = useState<AIState>({ loading: false, error: null, detailedExegesis: null, reflectionResponse: null });
   const [fontSize, setFontSize] = useState<number>(16);
+  const [titleFontSize, setTitleFontSize] = useState<number>(18);
   const [krFont, setKrFont] = useState<number>(() => { try { return parseInt(localStorage.getItem('bible_kr_font') || '0'); } catch { return 0; } });
   const [enFont, setEnFont] = useState<number>(() => { try { return parseInt(localStorage.getItem('bible_en_font') || '0'); } catch { return 0; } });
   const [themeIdx, setThemeIdx] = useState<number>(() => { try { return parseInt(localStorage.getItem('bible_theme_idx') || '0'); } catch { return 0; } });
@@ -1466,6 +1490,8 @@ const App: React.FC = () => {
       setBookmarks(savedBookmarks);
       const savedFontSize = localStorage.getItem('bible_reading_font_size');
       if (savedFontSize) setFontSize(parseInt(savedFontSize));
+      const savedTitleSize = localStorage.getItem('bible_title_font_size');
+      if (savedTitleSize) setTitleFontSize(parseInt(savedTitleSize));
       setDataLoaded(true);
     })();
   }, [isAuthed]);
@@ -1473,6 +1499,9 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('bible_reading_font_size', fontSize.toString());
   }, [fontSize]);
+  useEffect(() => {
+    localStorage.setItem('bible_title_font_size', titleFontSize.toString());
+  }, [titleFontSize]);
 
   const countFailDays = useCallback((startDate: string, endDate: Date) => {
     const start = new Date(startDate);
@@ -1757,6 +1786,7 @@ const App: React.FC = () => {
                   type="old"
                   section={reflection.old_testament}
                   fontSize={fontSize}
+                  titleFontSize={titleFontSize}
                   onExegesis={() => handleExegesis('old')}
                   onCopy={handleCopyText}
                   copiedId={copiedId}
@@ -1770,6 +1800,7 @@ const App: React.FC = () => {
                   type="new"
                   section={reflection.new_testament}
                   fontSize={fontSize}
+                  titleFontSize={titleFontSize}
                   onExegesis={() => handleExegesis('new')}
                   onCopy={handleCopyText}
                   copiedId={copiedId}
@@ -1782,9 +1813,9 @@ const App: React.FC = () => {
                 <div className="rounded-lg p-5 shadow-card sticker-card">
                   <div className="flex items-center gap-2 mb-3 text-text-tertiary">
                     <MessageCircle className="w-3.5 h-3.5" />
-                    <h3 className="font-black text-[9px] uppercase tracking-[0.3em]">오늘의 묵상</h3>
+                    <h3 className="font-black uppercase tracking-[0.3em]" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>오늘의 묵상</h3>
                   </div>
-                  <p className="text-text-primary font-bold leading-relaxed mb-3 serif-text" style={{ fontSize: `${fontSize - 2}px` }}>{reflection.meditation_question}</p>
+                  <p className="text-text-primary font-bold leading-relaxed mb-3 serif-text" style={{ fontSize: `${titleFontSize - 2}px` }}>{reflection.meditation_question}</p>
                   <textarea
                     value={savedMeditations[selectedDate.toISOString().split('T')[0]] || ''}
                     onChange={e => handleSaveMeditation(e.target.value)}
@@ -1808,7 +1839,7 @@ const App: React.FC = () => {
                 <div className="rounded-lg p-5 shadow-card sticker-card">
                   <div className="flex items-center gap-2 mb-3 text-text-tertiary">
                     <Heart className="w-3.5 h-3.5" />
-                    <h3 className="font-black text-[9px] uppercase tracking-[0.3em]">오늘의 기도제목</h3>
+                    <h3 className="font-black uppercase tracking-[0.3em]" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>오늘의 기도제목</h3>
                   </div>
                   <div className="space-y-3">
                     {reflection.prayer_topics && reflection.prayer_topics.length > 0 ? (
@@ -2109,6 +2140,7 @@ const App: React.FC = () => {
           isStreaming={streamingExegesis ? !streamingExegesis.done : false}
           onClose={() => { setStreamingExegesis(null); setFullBibleText(null); }}
           fontSize={fontSize}
+          titleFontSize={titleFontSize}
           onCopy={handleCopyText}
           copiedId={copiedId}
           onBookmark={handleToggleBookmark}
@@ -2139,7 +2171,9 @@ const App: React.FC = () => {
       {showSettings && (
         <SettingsPanel
           fontSize={fontSize}
+          titleFontSize={titleFontSize}
           onFontSizeChange={setFontSize}
+          onTitleFontSizeChange={setTitleFontSize}
           onEditPlan={plan ? () => setIsEditingPlan(true) : undefined}
           onReset={handleReset}
           onClose={() => setShowSettings(false)}
@@ -2171,13 +2205,14 @@ const StudySection: React.FC<{
   type: 'old' | 'new',
   section: any,
   fontSize: number,
+  titleFontSize: number,
   onExegesis: () => void,
   onCopy: (text: string, id: string) => void,
   copiedId: string | null,
   accentColor: string,
   note: string,
   onSaveNote: (note: string) => void
-}> = ({ type, section, fontSize, onExegesis, onCopy, copiedId, accentColor, note, onSaveNote }) => {
+}> = ({ type, section, fontSize, titleFontSize, onExegesis, onCopy, copiedId, accentColor, note, onSaveNote }) => {
   const label = type === 'old' ? '구약성경' : '신약성경';
   const [isPlaying, setIsPlaying] = useState(false);
   const [ttsLoading, setTtsLoading] = useState(false);
@@ -2224,7 +2259,7 @@ const StudySection: React.FC<{
         </div>
       </div>
 
-      <h2 className="text-lg font-black text-text-primary mb-4 tracking-tighter serif-text flex items-baseline justify-between">
+      <h2 className="font-black text-text-primary mb-4 tracking-tighter serif-text flex items-baseline justify-between" style={{ fontSize: `${titleFontSize}px` }}>
         {section.range}
         <span className="text-[9px] font-black text-text-tertiary uppercase tracking-widest px-2 py-0.5">Easy Bible</span>
       </h2>
@@ -2234,7 +2269,7 @@ const StudySection: React.FC<{
           <div className="bg-bg-secondary rounded-lg border border-border-light overflow-hidden shadow-subtle">
             <button onClick={() => setShowBackground(!showBackground)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-paper">
               <Info className={`w-3.5 h-3.5 text-accent-blue shrink-0`} />
-              <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">역사적 배경</h4>
+              <h4 className="font-black text-text-secondary uppercase tracking-[0.2em] flex-1" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>역사적 배경</h4>
               <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showBackground ? 'rotate-180' : ''}`} />
             </button>
             {showBackground && (
@@ -2248,7 +2283,7 @@ const StudySection: React.FC<{
         <div className={`bg-bg-paper rounded-lg border border-border-light shadow-card overflow-hidden`}>
           <button onClick={() => setShowSummary(!showSummary)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
             <BookText className={`w-3.5 h-3.5 text-accent-blue shrink-0`} />
-            <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">핵심 요약</h4>
+            <h4 className="font-black text-text-secondary uppercase tracking-[0.2em] flex-1" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>핵심 요약</h4>
             <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showSummary ? 'rotate-180' : ''}`} />
           </button>
           {showSummary && (
@@ -2263,7 +2298,7 @@ const StudySection: React.FC<{
             <div className="bg-bg-primary border border-border-light rounded-lg overflow-hidden shadow-subtle">
               <button onClick={() => setShowFigures(!showFigures)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
                 <Users className={`w-3.5 h-3.5 text-accent-green shrink-0`} />
-                <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">주요 인물</h4>
+                <h4 className="font-black text-text-secondary uppercase tracking-[0.2em] flex-1" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>주요 인물</h4>
                 <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showFigures ? 'rotate-180' : ''}`} />
               </button>
               {showFigures && (
@@ -2283,7 +2318,7 @@ const StudySection: React.FC<{
             <div className="bg-bg-primary border border-border-light rounded-lg overflow-hidden shadow-subtle">
               <button onClick={() => setShowVocabulary(!showVocabulary)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
                 <Languages className={`w-3.5 h-3.5 text-accent-yellow shrink-0`} />
-                <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-[0.2em] flex-1">용어 사전</h4>
+                <h4 className="font-black text-text-secondary uppercase tracking-[0.2em] flex-1" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>용어 사전</h4>
                 <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showVocabulary ? 'rotate-180' : ''}`} />
               </button>
               {showVocabulary && (
@@ -2347,6 +2382,7 @@ const ExegesisOverlay: React.FC<{
   isStreaming: boolean,
   onClose: () => void,
   fontSize: number,
+  titleFontSize: number,
   onCopy: (t: string, id: string) => void,
   copiedId: string | null,
   onBookmark: (text: string, source: string) => Promise<boolean>,
@@ -2354,7 +2390,7 @@ const ExegesisOverlay: React.FC<{
   fullText: { range: string; version: string; verses: BibleVerse[]; done: boolean } | null,
   onSaveWord: (word: string, meaning: string) => void,
   onRemoveWord: (word: string) => void
-}> = ({ data, isStreaming, onClose, fontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord }) => {
+}> = ({ data, isStreaming, onClose, fontSize, titleFontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord }) => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'fulltext' | 'exegesis'>('fulltext');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -2629,7 +2665,7 @@ const ExegesisOverlay: React.FC<{
     <div className="fixed inset-0 z-50 bg-bg-primary flex flex-col animate-in slide-in-from-bottom duration-300">
       <header className="bg-bg-primary border-b border-border-light p-6 flex items-center justify-between shrink-0 shadow-subtle z-10">
         <div>
-          <h3 className="text-2xl font-black text-text-primary serif-text uppercase tracking-tighter">{data.range}</h3>
+          <h3 className="font-black text-text-primary serif-text uppercase tracking-tighter" style={{ fontSize: `${titleFontSize + 4}px` }}>{data.range}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className="badge-archival bg-accent-blue">쉬운성경</span>
           </div>
