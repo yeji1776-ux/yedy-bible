@@ -1380,6 +1380,7 @@ const App: React.FC = () => {
   const [showJournal, setShowJournal] = useState(false);
   const [medSaveFlash, setMedSaveFlash] = useState(false);
   const [journalTab, setJournalTab] = useState<'meditation' | 'otNotes' | 'ntNotes'>('meditation');
+  const [journalDeleteConfirm, setJournalDeleteConfirm] = useState<{ type: 'meditation' | 'otNote' | 'ntNote'; dateStr: string; label: string } | null>(null);
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -1876,33 +1877,18 @@ const App: React.FC = () => {
                 {entries.map(([dateStr, text]) => {
                   const d = new Date(dateStr + 'T00:00:00');
                   const cached = reflectionCacheRef.current[dateStr];
-                  let lpTimer: ReturnType<typeof setTimeout> | null = null;
-                  const goToDate = () => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); };
                   return (
                     <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-6 shadow-subtle">
                       <div className="flex items-center justify-between mb-3">
-                        <span
-                          className="text-[10px] font-black text-text-tertiary uppercase tracking-widest cursor-pointer select-none"
-                          onTouchStart={() => { lpTimer = setTimeout(goToDate, 800); }}
-                          onTouchEnd={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                          onTouchMove={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                          onMouseDown={() => { lpTimer = setTimeout(goToDate, 800); }}
-                          onMouseUp={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                          onMouseLeave={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                          title="꾹 눌러서 해당 날짜로 이동"
-                        >
+                        <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
                           {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                         </span>
-                        <button onClick={() => {
-                          setSavedMeditations(prev => {
-                            const next = { ...prev };
-                            delete next[dateStr];
-                            localStorage.setItem('bible_saved_meditations', JSON.stringify(next));
-                            return next;
-                          });
-                        }} className="text-text-tertiary hover:text-accent-red transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); }} className="text-[8px] font-black text-accent-blue px-2 py-1 rounded border border-accent-blue/30 hover:bg-accent-blue/5 transition-colors">이동</button>
+                          <button onClick={() => setJournalDeleteConfirm({ type: 'meditation', dateStr, label: d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) })} className="text-text-tertiary hover:text-accent-red transition-colors p-1">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                       {cached?.meditation_question && (
                         <p className="text-[11px] text-accent-blue font-bold mb-3 leading-relaxed">Q. {cached.meditation_question}</p>
@@ -1946,39 +1932,21 @@ const App: React.FC = () => {
                     <div className="space-y-3">
                       {items.map(({ dateStr, note, range }) => {
                         const d = new Date(dateStr + 'T00:00:00');
-                        let lpTimer: ReturnType<typeof setTimeout> | null = null;
-                        const goToDate = () => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); };
                         return (
                           <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-5 shadow-subtle">
                             <div className="flex items-center justify-between mb-2">
-                              <div
-                                className="flex items-center gap-2 cursor-pointer select-none"
-                                onTouchStart={() => { lpTimer = setTimeout(goToDate, 800); }}
-                                onTouchEnd={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                onTouchMove={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                onMouseDown={() => { lpTimer = setTimeout(goToDate, 800); }}
-                                onMouseUp={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                onMouseLeave={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                title="꾹 눌러서 해당 날짜로 이동"
-                              >
+                              <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
                                   {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </span>
                                 {range && <span className="text-[10px] text-accent-blue font-bold">{range}</span>}
                               </div>
-                              <button onClick={() => {
-                                setSavedNotes(prev => {
-                                  const dayNotes = { ...prev[dateStr] };
-                                  delete dayNotes.old;
-                                  delete dayNotes.oldRange;
-                                  const next = { ...prev, [dateStr]: dayNotes };
-                                  if (!dayNotes.new) delete next[dateStr];
-                                  localStorage.setItem('bible_saved_notes', JSON.stringify(next));
-                                  return next;
-                                });
-                              }} className="text-text-tertiary hover:text-accent-red transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button onClick={() => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); }} className="text-[8px] font-black text-accent-blue px-2 py-1 rounded border border-accent-blue/30 hover:bg-accent-blue/5 transition-colors">이동</button>
+                                <button onClick={() => setJournalDeleteConfirm({ type: 'otNote', dateStr, label: `${range} (${d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })})` })} className="text-text-tertiary hover:text-accent-red transition-colors p-1">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-text-primary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{note}</p>
                           </div>
@@ -2021,39 +1989,21 @@ const App: React.FC = () => {
                     <div className="space-y-3">
                       {items.map(({ dateStr, note, range }) => {
                         const d = new Date(dateStr + 'T00:00:00');
-                        let lpTimer: ReturnType<typeof setTimeout> | null = null;
-                        const goToDate = () => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); };
                         return (
                           <div key={dateStr} className="bg-bg-primary border border-border-light rounded-xl p-5 shadow-subtle">
                             <div className="flex items-center justify-between mb-2">
-                              <div
-                                className="flex items-center gap-2 cursor-pointer select-none"
-                                onTouchStart={() => { lpTimer = setTimeout(goToDate, 800); }}
-                                onTouchEnd={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                onTouchMove={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                onMouseDown={() => { lpTimer = setTimeout(goToDate, 800); }}
-                                onMouseUp={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                onMouseLeave={() => { if (lpTimer) clearTimeout(lpTimer); }}
-                                title="꾹 눌러서 해당 날짜로 이동"
-                              >
+                              <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest">
                                   {d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </span>
                                 {range && <span className="text-[10px] text-accent-green font-bold">{range}</span>}
                               </div>
-                              <button onClick={() => {
-                                setSavedNotes(prev => {
-                                  const dayNotes = { ...prev[dateStr] };
-                                  delete dayNotes.new;
-                                  delete dayNotes.newRange;
-                                  const next = { ...prev, [dateStr]: dayNotes };
-                                  if (!dayNotes.old) delete next[dateStr];
-                                  localStorage.setItem('bible_saved_notes', JSON.stringify(next));
-                                  return next;
-                                });
-                              }} className="text-text-tertiary hover:text-accent-red transition-colors">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button onClick={() => { setSelectedDate(d); setCurrentView('reading'); setShowJournal(false); }} className="text-[8px] font-black text-accent-green px-2 py-1 rounded border border-accent-green/30 hover:bg-accent-green/5 transition-colors">이동</button>
+                                <button onClick={() => setJournalDeleteConfirm({ type: 'ntNote', dateStr, label: `${range} (${d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })})` })} className="text-text-tertiary hover:text-accent-red transition-colors p-1">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-text-primary leading-relaxed serif-text" style={{ fontSize: `${fontSize - 1}px` }}>{note}</p>
                           </div>
@@ -2066,6 +2016,51 @@ const App: React.FC = () => {
             );
           })()}
         </div>
+
+        {/* Delete confirmation popup */}
+        {journalDeleteConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 animate-in fade-in duration-150" onClick={() => setJournalDeleteConfirm(null)}>
+            <div className="bg-bg-primary rounded-xl border border-border-light shadow-xl mx-8 p-6 max-w-xs w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+              <p className="text-sm font-black text-text-primary text-center mb-2">삭제하시겠습니까?</p>
+              <p className="text-[11px] text-text-tertiary text-center mb-5 leading-relaxed">{journalDeleteConfirm.label}</p>
+              <div className="flex gap-3">
+                <button onClick={() => setJournalDeleteConfirm(null)} className="flex-1 py-2.5 rounded-lg text-[10px] font-black text-text-tertiary border border-border-light hover:bg-bg-secondary transition-colors">취소</button>
+                <button onClick={() => {
+                  const { type, dateStr } = journalDeleteConfirm;
+                  if (type === 'meditation') {
+                    setSavedMeditations(prev => {
+                      const next = { ...prev };
+                      delete next[dateStr];
+                      localStorage.setItem('bible_saved_meditations', JSON.stringify(next));
+                      return next;
+                    });
+                  } else if (type === 'otNote') {
+                    setSavedNotes(prev => {
+                      const dayNotes = { ...prev[dateStr] };
+                      delete dayNotes.old;
+                      delete dayNotes.oldRange;
+                      const next = { ...prev, [dateStr]: dayNotes };
+                      if (!dayNotes.new) delete next[dateStr];
+                      localStorage.setItem('bible_saved_notes', JSON.stringify(next));
+                      return next;
+                    });
+                  } else if (type === 'ntNote') {
+                    setSavedNotes(prev => {
+                      const dayNotes = { ...prev[dateStr] };
+                      delete dayNotes.new;
+                      delete dayNotes.newRange;
+                      const next = { ...prev, [dateStr]: dayNotes };
+                      if (!dayNotes.old) delete next[dateStr];
+                      localStorage.setItem('bible_saved_notes', JSON.stringify(next));
+                      return next;
+                    });
+                  }
+                  setJournalDeleteConfirm(null);
+                }} className="flex-1 py-2.5 rounded-lg text-[10px] font-black text-white bg-accent-red hover:opacity-90 transition-all">삭제</button>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       )}
 
