@@ -2429,6 +2429,7 @@ const App: React.FC = () => {
           onRemoveWord={(word) => handleDeleteWord(toLocalDateStr(selectedDate), word)}
           simpleTexts={simpleTexts}
           simpleTextsLoading={simpleTextsLoading}
+          initialWords={savedWords[toLocalDateStr(selectedDate)] || []}
         />
       )}
 
@@ -2671,12 +2672,15 @@ const ExegesisOverlay: React.FC<{
   onSaveWord: (word: string, meaning: string) => void,
   onRemoveWord: (word: string) => void,
   simpleTexts: Record<string, string> | null,
-  simpleTextsLoading: boolean
-}> = ({ data, isStreaming, onClose, fontSize, titleFontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord, simpleTexts, simpleTextsLoading }) => {
+  simpleTextsLoading: boolean,
+  initialWords: Array<{ word: string; meaning: string }>
+}> = ({ data, isStreaming, onClose, fontSize, titleFontSize, onCopy, copiedId, onBookmark, onAsk, fullText, onSaveWord, onRemoveWord, simpleTexts, simpleTextsLoading, initialWords }) => {
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'fulltext' | 'exegesis'>('fulltext');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [tappedWords, setTappedWords] = useState<Array<{ word: string; meaning: string | null; loading: boolean }>>([]);
+  const [tappedWords, setTappedWords] = useState<Array<{ word: string; meaning: string | null; loading: boolean }>>(() =>
+    initialWords.map(w => ({ word: w.word, meaning: w.meaning, loading: false }))
+  );
   const [pendingWord, setPendingWord] = useState<{ word: string; verseText: string } | null>(null);
   const [pendingRemoveWord, setPendingRemoveWord] = useState<string | null>(null);
   const [hoveredVerse, setHoveredVerse] = useState<number | null>(null);
