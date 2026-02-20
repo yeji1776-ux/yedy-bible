@@ -98,7 +98,28 @@ export async function saveReflection(date: string, reflection: DailyReflection):
 }
 
 export async function clearReflectionCache(): Promise<void> {
-  await supabase.from('reflection_cache').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('reflection_cache').delete()
+    .not('date', 'like', '!simple:%')
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+}
+
+// ─── Simplified Verses (영구 캐시) ───
+
+export async function loadSimplifiedVerses(range: string): Promise<Record<string, string> | null> {
+  const { data } = await supabase
+    .from('reflection_cache')
+    .select('data')
+    .eq('date', `!simple:${range}`)
+    .single();
+  if (!data) return null;
+  return data.data as Record<string, string>;
+}
+
+export async function saveSimplifiedVerses(range: string, verses: Record<string, string>): Promise<void> {
+  await supabase.from('reflection_cache').upsert(
+    { date: `!simple:${range}`, data: verses },
+    { onConflict: 'date' }
+  );
 }
 
 // ─── Bookmarks ───

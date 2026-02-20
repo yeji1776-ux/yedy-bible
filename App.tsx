@@ -46,7 +46,7 @@ import {
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS, fetchWordMeaning, generateSimplifiedVerses } from './services/geminiService';
 import { fetchBibleText } from './services/bibleApi';
-import { loadPlan, savePlan, loadHistory, markDatesStatus, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark } from './services/supabase';
+import { loadPlan, savePlan, loadHistory, markDatesStatus, loadReflectionCache, saveReflection, clearReflectionCache, clearAllData, loadBookmarks, addBookmark, deleteBookmark, loadSimplifiedVerses, saveSimplifiedVerses } from './services/supabase';
 
 const APP_PASSWORD = '0516';
 
@@ -1762,6 +1762,27 @@ const App: React.FC = () => {
     });
   };
 
+  const fetchOrGenerateSimple = async (verses: BibleVerse[], range: string, ck: string) => {
+    try {
+      const dbResult = await loadSimplifiedVerses(range);
+      if (dbResult && Object.keys(dbResult).length > 0) {
+        setSimpleTexts(dbResult);
+        simpleTextCacheRef.current[ck] = dbResult;
+        try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
+        return;
+      }
+    } catch {}
+    try {
+      const result = await generateSimplifiedVerses(verses, range);
+      if (Object.keys(result).length > 0) {
+        setSimpleTexts(result);
+        simpleTextCacheRef.current[ck] = result;
+        try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
+        saveSimplifiedVerses(range, result).catch(() => {});
+      }
+    } catch (err) { console.error('쉬운 설명 생성 실패:', err); }
+  };
+
   const handleExegesis = async (type: 'old' | 'new') => {
     if (!reflection) return;
     const data = type === 'old' ? reflection.old_testament : reflection.new_testament;
@@ -1779,13 +1800,7 @@ const App: React.FC = () => {
       setSimpleTexts(cachedSimple || null);
       if (!cachedSimple && cachedFullText.length > 0) {
         setSimpleTextsLoading(true);
-        generateSimplifiedVerses(cachedFullText, data.range).then(result => {
-          if (Object.keys(result).length > 0) {
-            setSimpleTexts(result);
-            simpleTextCacheRef.current[cacheKey] = result;
-            try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
-          }
-        }).catch((err) => { console.error('쉬운 설명 생성 실패:', err); }).finally(() => setSimpleTextsLoading(false));
+        fetchOrGenerateSimple(cachedFullText, data.range, cacheKey).finally(() => setSimpleTextsLoading(false));
       }
       return;
     }
@@ -1812,15 +1827,9 @@ const App: React.FC = () => {
       setFullBibleText(prev => prev ? { ...prev, done: true } : prev);
       fullBibleTextCacheRef.current[cacheKey] = collectedVerses;
       try { localStorage.setItem('bible_fulltext_cache_krv', JSON.stringify(fullBibleTextCacheRef.current)); } catch {}
-      // Generate simplified texts after full text is loaded
+      // Load from Supabase or generate simplified texts
       if (!cachedSimple && collectedVerses.length > 0) {
-        generateSimplifiedVerses(collectedVerses, data.range).then(result => {
-          if (Object.keys(result).length > 0) {
-            setSimpleTexts(result);
-            simpleTextCacheRef.current[cacheKey] = result;
-            try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
-          }
-        }).catch((err) => { console.error('쉬운 설명 생성 실패:', err); }).finally(() => setSimpleTextsLoading(false));
+        fetchOrGenerateSimple(collectedVerses, data.range, cacheKey).finally(() => setSimpleTextsLoading(false));
       } else if (!cachedSimple) {
         setSimpleTextsLoading(false);
       }
