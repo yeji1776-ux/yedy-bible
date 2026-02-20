@@ -106,13 +106,17 @@ export async function clearReflectionCache(): Promise<void> {
 // ─── Simplified Verses (영구 캐시) ───
 
 export async function loadSimplifiedVerses(range: string): Promise<Record<string, string> | null> {
-  const { data } = await supabase
-    .from('reflection_cache')
-    .select('data')
-    .eq('date', `!simple:${range}`)
-    .single();
-  if (!data) return null;
-  return data.data as Record<string, string>;
+  try {
+    const { data, error } = await supabase
+      .from('reflection_cache')
+      .select('data')
+      .eq('date', `!simple:${range}`)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data.data as Record<string, string>;
+  } catch {
+    return null;
+  }
 }
 
 export async function saveSimplifiedVerses(range: string, verses: Record<string, string>): Promise<void> {

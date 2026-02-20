@@ -1763,18 +1763,23 @@ const App: React.FC = () => {
   };
 
   const fetchOrGenerateSimple = async (verses: BibleVerse[], range: string, ck: string) => {
+    // 1) Supabase 영구 캐시 확인 (3초 타임아웃)
     try {
-      const dbResult = await loadSimplifiedVerses(range);
+      const dbResult = await Promise.race([
+        loadSimplifiedVerses(range),
+        new Promise<null>(r => setTimeout(() => r(null), 3000))
+      ]);
       if (dbResult && Object.keys(dbResult).length > 0) {
         setSimpleTexts(dbResult);
         simpleTextCacheRef.current[ck] = dbResult;
         try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
         return;
       }
-    } catch {}
+    } catch { /* Supabase 실패 시 AI 생성으로 fallback */ }
+    // 2) AI 생성 후 Supabase에 저장
     try {
       const result = await generateSimplifiedVerses(verses, range);
-      if (Object.keys(result).length > 0) {
+      if (result && Object.keys(result).length > 0) {
         setSimpleTexts(result);
         simpleTextCacheRef.current[ck] = result;
         try { localStorage.setItem('bible_simple_cache', JSON.stringify(simpleTextCacheRef.current)); } catch {}
