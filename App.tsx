@@ -2683,6 +2683,7 @@ const ExegesisOverlay: React.FC<{
   );
   const [pendingWord, setPendingWord] = useState<{ word: string; verseText: string } | null>(null);
   const [pendingRemoveWord, setPendingRemoveWord] = useState<string | null>(null);
+  const [panelDeleteWord, setPanelDeleteWord] = useState<string | null>(null);
   const [hoveredVerse, setHoveredVerse] = useState<number | null>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -3079,17 +3080,20 @@ const ExegesisOverlay: React.FC<{
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
                     {tappedWords.map((tw, idx) => (
-                      <div key={idx} className="flex items-start gap-3 bg-bg-secondary p-3 rounded-lg border border-border-light shadow-subtle group">
-                        <span className="text-[10px] font-black text-accent-blue bg-white px-2 py-0.5 rounded border border-border-light shrink-0">{tw.word}</span>
-                        {tw.loading ? (
-                          <Loader2 className="w-3.5 h-3.5 text-accent-blue animate-spin mt-0.5" />
-                        ) : (
-                          <span className="text-xs text-text-secondary leading-relaxed serif-text font-medium flex-1">{tw.meaning}</span>
-                        )}
-                        {!tw.loading && (
-                          <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== tw.word)); onRemoveWord(tw.word); }} className="shrink-0 p-1.5 text-text-tertiary hover:text-accent-red transition-colors">
-                            <X className="w-3 h-3" />
-                          </button>
+                      <div key={idx} className={`rounded-lg border shadow-subtle overflow-hidden transition-all ${panelDeleteWord === tw.word ? 'border-accent-red/30 bg-accent-red/5' : 'border-border-light bg-bg-secondary'}`}>
+                        <div className="flex items-start gap-3 p-3 cursor-pointer" onClick={() => !tw.loading && setPanelDeleteWord(prev => prev === tw.word ? null : tw.word)}>
+                          <span className="text-[10px] font-black text-accent-blue bg-white px-2 py-0.5 rounded border border-border-light shrink-0">{tw.word}</span>
+                          {tw.loading ? (
+                            <Loader2 className="w-3.5 h-3.5 text-accent-blue animate-spin mt-0.5" />
+                          ) : (
+                            <span className="text-xs text-text-secondary leading-relaxed serif-text font-medium flex-1">{tw.meaning}</span>
+                          )}
+                        </div>
+                        {panelDeleteWord === tw.word && (
+                          <div className="flex items-center justify-end gap-2 px-3 pb-3 animate-in fade-in duration-150">
+                            <button onClick={() => setPanelDeleteWord(null)} className="px-3 py-1.5 text-[10px] font-black text-text-tertiary uppercase tracking-widest">취소</button>
+                            <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== tw.word)); onRemoveWord(tw.word); setPanelDeleteWord(null); }} className="btn-analogue bg-accent-red text-white px-4 py-1.5 text-[10px] border-accent-red">삭제</button>
+                          </div>
                         )}
                       </div>
                     ))}
