@@ -2537,8 +2537,8 @@ const StudySection: React.FC<{
 
       <div className="space-y-3">
         {section.background && (
-          <div className="bg-bg-secondary rounded-lg border border-border-light overflow-hidden shadow-subtle">
-            <button onClick={() => setShowBackground(!showBackground)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-paper">
+          <div className="bg-bg-primary rounded-lg border border-border-light overflow-hidden shadow-subtle">
+            <button onClick={() => setShowBackground(!showBackground)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
               <Info className={`w-3.5 h-3.5 text-accent-blue shrink-0`} />
               <h4 className="font-black text-text-secondary uppercase tracking-[0.2em] flex-1" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>역사적 배경</h4>
               <ChevronDown className={`w-3.5 h-3.5 text-text-tertiary transition-transform duration-300 ${showBackground ? 'rotate-180' : ''}`} />
@@ -2551,7 +2551,7 @@ const StudySection: React.FC<{
           </div>
         )}
 
-        <div className={`bg-bg-paper rounded-lg border border-border-light shadow-card overflow-hidden`}>
+        <div className={`bg-bg-primary rounded-lg border border-border-light shadow-subtle overflow-hidden`}>
           <button onClick={() => setShowSummary(!showSummary)} className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-secondary">
             <BookText className={`w-3.5 h-3.5 text-accent-blue shrink-0`} />
             <h4 className="font-black text-text-secondary uppercase tracking-[0.2em] flex-1" style={{ fontSize: `${Math.max(9, titleFontSize - 8)}px` }}>핵심 요약</h4>
