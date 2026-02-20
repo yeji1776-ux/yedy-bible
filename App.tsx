@@ -40,7 +40,8 @@ import {
   LogOut,
   Share2,
   Heart,
-  Underline
+  Underline,
+  ScanFace
 } from 'lucide-react';
 import { DailyReflection, AIState, ReadingHistory, ReadingPlan, Bookmark as BookmarkType, ExegesisItem, BibleVerse } from './types';
 import { fetchDailyReflection, streamDetailedExegesis, getDeepReflection, playTTS, fetchWordMeaning, generateSimplifiedVerses } from './services/geminiService';
@@ -289,7 +290,84 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const initiated = useRef(false);
   const maxLen = 4;
+
+  const completeAuth = () => {
+    setSuccess(true);
+    setTimeout(() => { sessionStorage.setItem('yedy_bible_auth', 'true'); onAuth(); }, 600);
+  };
+
+  const tryBiometricAuth = async () => {
+    const credIdStr = localStorage.getItem('yedy_biometric_cred');
+    if (!credIdStr) return false;
+    try {
+      const credId = Uint8Array.from(atob(credIdStr), c => c.charCodeAt(0));
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials: [{ id: credId, type: 'public-key' as const, transports: ['internal' as AuthenticatorTransport] }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      });
+      if (assertion) { completeAuth(); return true; }
+    } catch {}
+    return false;
+  };
+
+  const tryBiometricRegister = async () => {
+    try {
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "Hare's Bible" },
+          user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'user', displayName: 'User' },
+          pubKeyCredParams: [
+            { alg: -7, type: 'public-key' as const },
+            { alg: -257, type: 'public-key' as const }
+          ],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform' as const,
+            userVerification: 'required'
+          },
+          timeout: 60000
+        }
+      });
+      if (credential) {
+        const rawId = new Uint8Array((credential as PublicKeyCredential).rawId);
+        localStorage.setItem('yedy_biometric_cred', btoa(String.fromCharCode(...rawId)));
+        completeAuth();
+        return true;
+      }
+    } catch {}
+    return false;
+  };
+
+  useEffect(() => {
+    if (initiated.current) return;
+    initiated.current = true;
+    (async () => {
+      if (!window.PublicKeyCredential) return;
+      try {
+        const ok = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        setBiometricAvailable(ok);
+        if (ok && localStorage.getItem('yedy_biometric_cred')) {
+          tryBiometricAuth();
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const handleBiometricTap = () => {
+    if (success) return;
+    if (localStorage.getItem('yedy_biometric_cred')) {
+      tryBiometricAuth();
+    } else {
+      tryBiometricRegister();
+    }
+  };
 
   const handleKey = (num: string) => {
     if (password.length >= maxLen || success) return;
@@ -298,11 +376,7 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
     setPassword(next);
     if (next.length === maxLen) {
       if (next === APP_PASSWORD) {
-        setSuccess(true);
-        setTimeout(() => {
-          sessionStorage.setItem('yedy_bible_auth', 'true');
-          onAuth();
-        }, 600);
+        completeAuth();
       } else {
         setError(true);
         setShake(true);
@@ -321,7 +395,7 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
     <div className="min-h-screen flex flex-col items-center relative overflow-hidden" style={{ background: '#2c2f2c' }}>
       {/* Header area */}
       <div className="w-full pt-14 pb-4 px-8">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] mb-5" style={{ color: 'rgba(255,255,255,0.25)' }}>Established 2025</p>
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] mb-5" style={{ color: 'rgba(255,255,255,0.25)' }}>Established 2026</p>
         <div className="flex items-center gap-3">
           <svg viewBox="0 0 512 512" className="w-5 h-5"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="rgba(255,255,255,0.15)"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="rgba(255,255,255,0.25)"/><circle cx="262" cy="240" r="105" fill="rgba(255,255,255,0.4)"/></svg>
           <h1 className="text-[18px] font-medium uppercase tracking-[0.35em]" style={{ color: 'rgba(255,255,255,0.45)' }}>Hare's Bible</h1>
@@ -355,7 +429,13 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
               <span className="text-[36px] font-extralight" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'Pretendard', -apple-system, sans-serif" }}>{n}</span>
             </button>
           ))}
-          <div className="flex items-center justify-center h-[72px]" />
+          {biometricAvailable ? (
+            <button onClick={handleBiometricTap} className="flex items-center justify-center h-[72px] active:opacity-40 transition-opacity duration-100" style={{ background: 'transparent', border: 'none' }}>
+              <ScanFace className="w-[26px] h-[26px]" style={{ color: 'rgba(255,255,255,0.35)' }} />
+            </button>
+          ) : (
+            <div className="flex items-center justify-center h-[72px]" />
+          )}
           <button onClick={() => handleKey('0')} className="flex items-center justify-center h-[72px] active:opacity-40 transition-opacity duration-100" style={{ background: 'transparent', border: 'none' }}>
             <span className="text-[36px] font-extralight" style={{ color: 'rgba(255,255,255,0.5)', fontFamily: "'Pretendard', -apple-system, sans-serif" }}>0</span>
           </button>
@@ -2384,7 +2464,7 @@ const App: React.FC = () => {
 
       {aiState.loading && (
         <div className="fixed inset-0 z-[60] bg-bg-primary/60 backdrop-blur-sm flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 animate-spin" style={{ background: 'rgba(240,241,244,0.6)' }}>
+          <div className="w-12 h-12 flex items-center justify-center mb-5 animate-spin">
             <svg viewBox="0 0 512 512" className="w-8 h-8 opacity-70"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
           </div>
           <p className="text-text-tertiary font-black text-[10px] uppercase tracking-widest">깊이 살피는 중...</p>
