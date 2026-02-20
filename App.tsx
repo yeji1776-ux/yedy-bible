@@ -3084,7 +3084,12 @@ const ExegesisOverlay: React.FC<{
                         {tw.loading ? (
                           <Loader2 className="w-3.5 h-3.5 text-accent-blue animate-spin mt-0.5" />
                         ) : (
-                          <span className="text-xs text-text-secondary leading-relaxed serif-text font-medium">{tw.meaning}</span>
+                          <span className="text-xs text-text-secondary leading-relaxed serif-text font-medium flex-1">{tw.meaning}</span>
+                        )}
+                        {!tw.loading && (
+                          <button onClick={() => { setTappedWords(prev => prev.filter(w => w.word !== tw.word)); onRemoveWord(tw.word); }} className="shrink-0 p-1.5 text-text-tertiary hover:text-accent-red transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
                         )}
                       </div>
                     ))}
