@@ -535,9 +535,7 @@ const Header: React.FC<{
     <header className="bg-bg-primary border-b border-border-light sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => onRefresh ? onRefresh() : window.location.reload()}>
-          <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden" style={{ background: '#F0F1F4' }}>
-            <svg viewBox="0 0 512 512" className="w-6 h-6"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
-          </div>
+          <svg viewBox="0 0 512 512" className="w-8 h-8"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
           <div>
             <h1 className="text-base font-black text-text-primary tracking-tight serif-text">Hare's Bible</h1>
             <p className="text-[9px] font-bold text-text-tertiary uppercase tracking-tighter -mt-1">Volume. 01</p>
