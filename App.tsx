@@ -397,7 +397,7 @@ const PasswordGate: React.FC<{ onAuth: () => void }> = ({ onAuth }) => {
       <div className="w-full pt-14 pb-4 px-8">
         <p className="text-[10px] font-medium uppercase tracking-[0.2em] mb-5" style={{ color: 'rgba(255,255,255,0.25)' }}>Established 2026</p>
         <div className="flex items-center gap-3">
-          <svg viewBox="0 0 512 512" className="w-5 h-5"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="rgba(255,255,255,0.15)"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="rgba(255,255,255,0.25)"/><circle cx="262" cy="240" r="105" fill="rgba(255,255,255,0.4)"/></svg>
+          <svg viewBox="0 0 512 512" className="w-5 h-5"><path d="M256,18 C390,4 494,100 498,248 C502,396 405,480 256,488 C107,496 10,396 14,248 C18,100 122,32 256,18Z" fill="rgba(255,255,255,0.08)"/><path d="M258,72 C365,58 445,142 450,250 C455,358 378,432 262,426 C146,420 65,348 62,242 C59,136 151,86 258,72Z" fill="rgba(255,255,255,0.16)"/><path d="M260,140 C330,130 390,180 394,252 C398,324 345,375 264,370 C183,365 125,320 122,250 C119,180 190,150 260,140Z" fill="rgba(255,255,255,0.28)"/><circle cx="261" cy="256" r="72" fill="rgba(255,255,255,0.42)"/></svg>
           <h1 className="text-[18px] font-medium uppercase tracking-[0.35em]" style={{ color: 'rgba(255,255,255,0.45)' }}>Hare's Bible</h1>
         </div>
         <div className="mt-4 w-10 h-[2px]" style={{ background: 'rgba(255,255,255,0.15)' }} />
@@ -535,7 +535,7 @@ const Header: React.FC<{
     <header className="bg-bg-primary border-b border-border-light sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => onRefresh ? onRefresh() : window.location.reload()}>
-          <svg viewBox="0 0 512 512" className="w-8 h-8"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
+          <svg viewBox="0 0 512 512" className="w-8 h-8"><path d="M256,18 C390,4 494,100 498,248 C502,396 405,480 256,488 C107,496 10,396 14,248 C18,100 122,32 256,18Z" fill="#DDD0C0"/><path d="M258,72 C365,58 445,142 450,250 C455,358 378,432 262,426 C146,420 65,348 62,242 C59,136 151,86 258,72Z" fill="#B8996E"/><path d="M260,140 C330,130 390,180 394,252 C398,324 345,375 264,370 C183,365 125,320 122,250 C119,180 190,150 260,140Z" fill="#8B6642"/><circle cx="261" cy="256" r="72" fill="#5C3D2E"/></svg>
           <div>
             <h1 className="text-base font-black text-text-primary tracking-tight serif-text">Hare's Bible</h1>
             <p className="text-[9px] font-bold text-text-tertiary uppercase tracking-tighter -mt-1">Volume. 01</p>
@@ -2463,7 +2463,7 @@ const App: React.FC = () => {
       {aiState.loading && (
         <div className="fixed inset-0 z-[60] bg-bg-primary/60 backdrop-blur-sm flex flex-col items-center justify-center">
           <div className="w-12 h-12 flex items-center justify-center mb-5 animate-spin">
-            <svg viewBox="0 0 512 512" className="w-8 h-8 opacity-70"><path d="M256,52 C350,42 430,110 438,220 C446,330 370,420 260,415 C150,410 62,330 58,220 C54,110 162,62 256,52Z" fill="#D0D4DE"/><path d="M260,95 C335,88 400,145 405,230 C410,315 350,380 265,376 C180,372 115,315 112,235 C109,155 185,102 260,95Z" fill="#9BA5B8"/><circle cx="262" cy="240" r="105" fill="#4A5D74"/></svg>
+            <svg viewBox="0 0 512 512" className="w-8 h-8 opacity-70"><path d="M256,18 C390,4 494,100 498,248 C502,396 405,480 256,488 C107,496 10,396 14,248 C18,100 122,32 256,18Z" fill="#DDD0C0"/><path d="M258,72 C365,58 445,142 450,250 C455,358 378,432 262,426 C146,420 65,348 62,242 C59,136 151,86 258,72Z" fill="#B8996E"/><path d="M260,140 C330,130 390,180 394,252 C398,324 345,375 264,370 C183,365 125,320 122,250 C119,180 190,150 260,140Z" fill="#8B6642"/><circle cx="261" cy="256" r="72" fill="#5C3D2E"/></svg>
           </div>
           <p className="text-text-tertiary font-black text-[10px] uppercase tracking-widest">깊이 살피는 중...</p>
         </div>
